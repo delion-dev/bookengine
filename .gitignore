@@ -33,12 +33,8 @@ debug.log
 .claude/settings.local.json
 .claude/__pycache__/
 
-# 책 데이터 — 빌드 산출물만 제외 (원고는 포함)
-books/*/publication/output/*
-books/*/publication/assets/*
-books/*/db/session_history.jsonl
-books/*/.cache/
-books/*/epub_output/
+# 책 원고 데이터 — 공개 저장소에서 전체 제외 (개인 작업물)
+books/
 
 # 아카이브
 _archive/

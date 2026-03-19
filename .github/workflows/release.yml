@@ -37,7 +37,7 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Install platform-specific native deps
+      - name: Install Windows native bindings
         working-directory: frontend
         run: |
           npm install @tauri-apps/cli-win32-x64-msvc --save-optional || true
@@ -48,18 +48,16 @@ jobs:
         working-directory: frontend
         env:
           BOOKENGINE_LICENSE_SECRET: ${{ secrets.BOOKENGINE_LICENSE_SECRET }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build
+        run: npm run tauri build -- --bundles nsis,msi
 
-      - name: Upload NSIS installer
+      - name: Upload NSIS installer (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: BookEngine-${{ github.ref_name }}-setup
           path: frontend/src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: warn
 
-      - name: Upload MSI installer
+      - name: Upload MSI installer (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: BookEngine-${{ github.ref_name }}-msi
@@ -80,15 +78,19 @@ jobs:
           body: |
             ## BookEngine ${{ github.ref_name }}
 
+            ### 설치 방법
+            1. 아래 `*-setup.exe` 파일 다운로드
+            2. 실행 후 설치 진행
+            3. 앱 실행 → 라이선스 키 입력 (무료: `BKENG-TRIAL-00000-00000-00000`)
+            4. Gemini 또는 OpenAI API 키 입력
+
             ### 다운로드
             | 파일 | 설명 |
             |------|------|
             | `*-setup.exe` | NSIS 설치 마법사 (권장) |
             | `*.msi` | MSI 패키지 |
 
-            ### 설치 요구사항
+            ### 시스템 요구사항
             - Windows 10 / 11 (64-bit)
+            - Python 3.11+ (서버 실행용)
             - Google Gemini API 키 또는 OpenAI API 키
-
-            ### 변경 사항
-            자동 생성된 릴리즈 노트를 참고하세요.

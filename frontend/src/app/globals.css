@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* BookEngine Design System — Dark Mode Glassmorphism */
+:root {
+  /* Background Layers */
+  --bg-deep:     #020203;
+  --bg-base:     #050506;
+  --bg-elevated: #0a0a0c;
+  --bg-card:     #0E1223;
+  --bg-muted:    #1A1E2F;
+
+  /* Surface (Glassmorphism) */
+  --surface:        rgba(255, 255, 255, 0.05);
+  --surface-hover:  rgba(255, 255, 255, 0.08);
+  --surface-active: rgba(255, 255, 255, 0.12);
+  --border:         rgba(255, 255, 255, 0.08);
+
+  /* Text */
+  --foreground:        #EDEDEF;
+  --foreground-muted:  #8A8F98;
+  --foreground-subtle: #4B5563;
+
+  /* Accent */
+  --accent:      #5E6AD2;
+  --accent-hover: #7C85E0;
+  --accent-glow:  rgba(94, 106, 210, 0.25);
+
+  /* Status */
+  --success: #22C55E;
+  --warning: #F97316;
+  --danger:  #EF4444;
+  --info:    #3B82F6;
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+@theme inline {
+  --color-background: var(--bg-deep);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Selection */
+::selection { background: var(--accent-glow); color: var(--foreground); }
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

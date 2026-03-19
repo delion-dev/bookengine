@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# 환경변수 (예시 파일은 포함)
+.env
+.env.*
+!.env.example
+
+# Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Tauri 빌드 결과물 (용량 큼)
+frontend/src-tauri/target/
+
+# 로컬 캐시
+.cache/
+
+# 로그
+debug.log
+*.log
+
+# Claude Code 로컬 설정 (에이전트/커맨드는 유지, 로컬 설정만 제외)
+.claude/settings.local.json
+.claude/__pycache__/
+
+# 책 데이터 — 빌드 산출물만 제외 (원고는 포함)
+books/*/publication/output/*
+books/*/publication/assets/*
+books/*/db/session_history.jsonl
+books/*/.cache/
+books/*/epub_output/
+
+# 아카이브
+_archive/
+
+# OS
+.DS_Store
+Thumbs.db

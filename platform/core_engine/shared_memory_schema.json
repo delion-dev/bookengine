@@ -1,0 +1,106 @@
+{
+  "version": "1.0",
+  "title": "shared_memory_schema",
+  "type": "object",
+  "required": [
+    "global_memory",
+    "book_memory",
+    "chapter_memory",
+    "run_memory"
+  ],
+  "properties": {
+    "global_memory": {
+      "type": "object",
+      "required": [
+        "engine_version",
+        "constitution_version",
+        "registry_snapshot"
+      ],
+      "properties": {
+        "engine_version": { "type": "string" },
+        "constitution_version": { "type": "string" },
+        "registry_snapshot": { "type": "object" }
+      }
+    },
+    "book_memory": {
+      "type": "object",
+      "required": [
+        "book_id",
+        "core_message",
+        "reader_persona",
+        "chapter_dependencies",
+        "open_questions"
+      ],
+      "properties": {
+        "book_id": { "type": "string" },
+        "core_message": { "type": "string" },
+        "reader_persona": { "type": "string" },
+        "chapter_dependencies": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "open_questions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "chapter_memory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "chapter_id",
+          "summary",
+          "claims",
+          "citations_summary",
+          "unresolved_issues",
+          "visual_notes"
+        ],
+        "properties": {
+          "chapter_id": { "type": "string" },
+          "summary": { "type": "string" },
+          "claims": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "citations_summary": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "unresolved_issues": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "visual_notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "run_memory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "agent_id",
+          "stage_id",
+          "notes",
+          "updated_at"
+        ],
+        "properties": {
+          "session_id": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "stage_id": { "type": "string" },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "updated_at": { "type": "string" }
+        }
+      }
+    }
+  }
+}

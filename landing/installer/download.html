@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookEngine 다운로드</title>
+  <meta name="description" content="BookEngine 무료 다운로드 — Windows 10/11 로컬 설치형 AI 도서 자동 집필 플랫폼" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    .download-hero { padding: 80px 0 60px; text-align: center; }
+    .download-hero h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 700; margin-bottom: 12px; }
+    .download-hero p { color: var(--text-muted); font-size: 16px; margin-bottom: 40px; }
+
+    .download-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 48px; }
+    .download-card { background: var(--surface); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px; text-align: center; transition: border-color 0.2s, transform 0.2s; }
+    .download-card:hover { border-color: rgba(94,106,210,0.35); transform: translateY(-2px); }
+    .download-card.primary { border-color: rgba(94,106,210,0.3); background: rgba(94,106,210,0.07); }
+    .dl-icon { font-size: 40px; margin-bottom: 16px; }
+    .dl-platform { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .dl-version { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
+    .dl-size { color: var(--text-subtle); font-size: 12px; margin-bottom: 20px; }
+    .btn-download { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.15s; }
+    .btn-download:hover { background: var(--accent-hover); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-download.disabled { background: var(--surface); color: var(--text-muted); cursor: not-allowed; border: 1px solid var(--border); }
+    .dl-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-bottom: 12px; }
+    .dl-badge.recommended { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.2); }
+    .dl-badge.soon { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.2); }
+
+    .install-steps { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+    .install-steps h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+    .step-list { list-style: none; }
+    .step-list li { display: flex; gap: 16px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .step-list li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; background: rgba(94,106,210,0.2); color: var(--accent); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .step-text { flex: 1; }
+    .step-text strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .step-text span { color: var(--text-muted); font-size: 13px; }
+
+    .reqs { display: flex; gap: 16px; flex-wrap: wrap; }
+    .req-item { flex: 1; min-width: 180px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+    .req-item dt { color: var(--text-muted); font-size: 12px; margin-bottom: 4px; }
+    .req-item dd { font-size: 14px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon">BE</div>
+        <span class="logo-text">BookEngine</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html#features">기능</a>
+        <a href="../index.html#book">기술 도서</a>
+        <a href="download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <section class="download-hero">
+    <div class="container">
+      <div class="badge">무료 다운로드</div>
+      <h1>BookEngine 설치하기</h1>
+      <p>Windows 10/11 · 로컬 설치형 · 완전 오프라인 실행</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <!-- Download Cards -->
+    <div class="download-cards">
+      <div class="download-card primary">
+        <div class="dl-badge recommended">권장</div>
+        <div class="dl-icon">🪟</div>
+        <div class="dl-platform">Windows (NSIS 설치 마법사)</div>
+        <div class="dl-version">v0.1.0-beta</div>
+        <div class="dl-size">~15 MB</div>
+        <a href="#" class="btn-download disabled">
+          ↓ 준비 중
+        </a>
+      </div>
+      <div class="download-card">
+        <div class="dl-badge soon">예정</div>
+        <div class="dl-icon">🪟</div>
+        <div class="dl-platform">Windows (MSI)</div>
+        <div class="dl-version">v0.1.0-beta</div>
+        <div class="dl-size">~12 MB</div>
+        <a href="#" class="btn-download disabled">
+          ↓ 준비 중
+        </a>
+      </div>
+      <div class="download-card">
+        <div class="dl-badge soon">예정</div>
+        <div class="dl-icon">🍎</div>
+        <div class="dl-platform">macOS</div>
+        <div class="dl-version">추후 지원 예정</div>
+        <div class="dl-size">—</div>
+        <a href="#" class="btn-download disabled">
+          추후 지원 예정
+        </a>
+      </div>
+    </div>
+
+    <!-- Install Steps -->
+    <div class="install-steps">
+      <h3>설치 방법</h3>
+      <ol class="step-list">
+        <li>
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <strong>설치 파일 다운로드</strong>
+            <span>위 버튼을 클릭하여 설치 파일을 다운로드합니다.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>설치 마법사 실행</strong>
+            <span>다운로드된 <code>.exe</code> 또는 <code>.msi</code> 파일을 실행합니다. Windows SmartScreen 경고가 뜨면 "추가 정보 → 실행"을 선택하세요.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>AI API 키 준비</strong>
+            <span>Google Gemini API 키 또는 OpenAI API 키가 필요합니다. 앱 실행 후 설정에서 입력하세요.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div class="step-text">
+            <strong>라이선스 키 입력 (선택)</strong>
+            <span>무료 체험 모드로 바로 시작하거나 라이선스 키를 입력하여 전체 기능을 활성화할 수 있습니다.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">5</div>
+          <div class="step-text">
+            <strong>첫 번째 책 등록</strong>
+            <span>기획안 파일과 작업 폴더를 지정하면 자동 집필 파이프라인이 시작됩니다.</span>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- System Requirements -->
+    <div class="section-header" style="text-align:left; margin-bottom: 16px;">
+      <h2 style="font-size: 20px;">시스템 요구사항</h2>
+    </div>
+    <dl class="reqs" style="margin-bottom: 60px;">
+      <div class="req-item">
+        <dt>운영체제</dt>
+        <dd>Windows 10 / 11 (64-bit)</dd>
+      </div>
+      <div class="req-item">
+        <dt>메모리</dt>
+        <dd>4 GB RAM 이상</dd>
+      </div>
+      <div class="req-item">
+        <dt>저장공간</dt>
+        <dd>500 MB 이상 여유 공간</dd>
+      </div>
+      <div class="req-item">
+        <dt>인터넷</dt>
+        <dd>AI API 호출 시 필요</dd>
+      </div>
+      <div class="req-item">
+        <dt>AI API 키</dt>
+        <dd>Gemini 또는 OpenAI</dd>
+      </div>
+    </dl>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">
+        <div class="logo-icon sm">BE</div>
+        <span>BookEngine</span>
+      </div>
+      <p class="footer-copy">© 2026 BookEngine. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

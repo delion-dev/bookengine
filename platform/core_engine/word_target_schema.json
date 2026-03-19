@@ -1,0 +1,19 @@
+{
+  "schema_id": "word_targets@1.0",
+  "type": "object",
+  "required": [
+    "book_id",
+    "generated_at",
+    "total_target_words",
+    "chapters"
+  ],
+  "chapter_required": [
+    "chapter_id",
+    "target_words",
+    "min_words",
+    "max_words",
+    "target_chars_estimate",
+    "anchor_budget",
+    "stage_progress_floors"
+  ]
+}

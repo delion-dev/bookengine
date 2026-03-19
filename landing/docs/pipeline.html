@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 집필 파이프라인 — BookEngine</title>
+  <meta name="description" content="BookEngine 13단계 AI 자동화 집필 파이프라인. 기획안 하나로 EPUB 출판까지 전 과정 설명." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/docs.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon">BE</div>
+        <span class="logo-text">BookEngine</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html#features">기능</a>
+        <a href="../index.html#book">기술 도서</a>
+        <a href="getting-started.html">문서</a>
+        <a href="../installer/download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Docs Layout -->
+  <div class="docs-layout">
+
+    <!-- Sidebar -->
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar-label">문서</div>
+      <nav class="docs-nav">
+        <a href="getting-started.html">시작하기</a>
+        <a href="pipeline.html" class="active">AI 집필 파이프라인</a>
+        <a href="api-keys.html">API 키 설정</a>
+        <a href="google-books.html">Google Books 출판</a>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="docs-content">
+
+      <div class="docs-breadcrumb">
+        <a href="../index.html">홈</a>
+        <span>/</span>
+        <span>AI 집필 파이프라인</span>
+      </div>
+
+      <h1>AI 집필 파이프라인</h1>
+      <p class="docs-lead">
+        BookEngine의 13단계 자동화 파이프라인은 기획안 입력부터 EPUB 패키징까지 전 과정을 처리합니다.
+        각 스테이지는 독립적으로 실행하거나, 전체를 순차적으로 자동 진행할 수 있습니다.
+      </p>
+
+      <!-- 파이프라인 개요 -->
+      <h2>파이프라인 개요</h2>
+      <p>
+        각 스테이지는 이전 스테이지의 출력을 입력으로 받아 처리합니다.
+        게이트 검증에 실패한 스테이지는 자동으로 재시도(Self-Healing)되며, 결과는 실시간 대시보드에서 확인할 수 있습니다.
+      </p>
+
+      <div class="info-box">
+        <div class="info-box-title">Work Order 시스템</div>
+        BookEngine은 챕터 단위 병렬 처리를 지원합니다. 예를 들어 S4(초안 집필) 단계에서
+        20개 챕터를 동시에 AI에 요청하여 처리 시간을 대폭 단축합니다.
+      </div>
+
+      <!-- 준비 단계 -->
+      <h2>준비 단계</h2>
+
+      <div class="pipeline-list">
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S-1</span></div>
+          <div class="pipeline-body">
+            <h3>사전구성 <span class="stage-badge">Pre-Config</span></h3>
+            <p>
+              책의 기본 메타데이터를 설정합니다. 제목, 부제, 저자, 언어, 장르, 목표 챕터 수,
+              챕터당 목표 단어 수를 입력합니다. AI 모델 및 온도(Temperature) 값도 이 단계에서 설정합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S0</span></div>
+          <div class="pipeline-body">
+            <h3>초기화 <span class="stage-badge">Initialize</span></h3>
+            <p>
+              작업 폴더 구조를 생성하고 기획안 파일을 파싱합니다.
+              챕터 목록 초안, 전체 컨텍스트 문서, 스타일 프로파일을 생성합니다.
+              이후 모든 스테이지가 참조하는 <code>book_context.json</code>이 이 단계에서 만들어집니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 기획 단계 -->
+      <h2>기획 단계</h2>
+
+      <div class="pipeline-list">
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S1</span></div>
+          <div class="pipeline-body">
+            <h3>기획 <span class="stage-badge">Planning</span></h3>
+            <p>
+              기획안을 분석해 책의 핵심 주제, 독자층, 차별점을 정의합니다.
+              AI가 기획의 강점과 보완점을 평가하고 최종 집필 방향성 문서를 생성합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S2</span></div>
+          <div class="pipeline-body">
+            <h3>목차 <span class="stage-badge">TOC</span></h3>
+            <p>
+              챕터 구성과 절(Section) 구조를 생성합니다.
+              각 챕터의 핵심 내용, 학습 목표, 예상 단어 수를 포함한 상세 목차가 출력됩니다.
+              사용자가 목차를 검토하고 수정한 뒤 다음 단계로 진행합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S3</span></div>
+          <div class="pipeline-body">
+            <h3>개요 <span class="stage-badge">Outline</span></h3>
+            <p>
+              목차의 각 챕터를 상세 개요로 확장합니다.
+              절별 핵심 포인트, 예시 코드/이미지 앵커, 인용 슬롯을 포함한
+              챕터 집필 지시서(Chapter Brief)가 생성됩니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 집필 단계 -->
+      <h2>집필 단계</h2>
+
+      <div class="pipeline-list">
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S4</span></div>
+          <div class="pipeline-body">
+            <h3>초안 집필 <span class="stage-badge">Draft</span></h3>
+            <p>
+              챕터 개요를 기반으로 AI가 전체 초안을 집필합니다.
+              챕터는 병렬로 처리되며, 단어 수 게이트(목표의 80% 이상)를 통과한 챕터만 다음 단계로 진행합니다.
+              게이트 실패 시 자동으로 보강 집필(Re-draft)이 실행됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S5</span></div>
+          <div class="pipeline-body">
+            <h3>자료 수집 <span class="stage-badge">Research</span></h3>
+            <p>
+              초안에 삽입된 앵커 슬롯(<code>[REF:xxx]</code>)을 분석해 참고 자료를 수집합니다.
+              웹 검색 기반 인용 자료, 통계, 사례 연구를 자동으로 수집하여 초안에 삽입합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S6</span></div>
+          <div class="pipeline-body">
+            <h3>이미지 자산 <span class="stage-badge">Images</span></h3>
+            <p>
+              초안에 삽입된 이미지 앵커(<code>[IMG:xxx]</code>)에 맞는 이미지를 수집하거나 생성합니다.
+              다이어그램, 플로우차트는 Mermaid 코드로 자동 생성되며, PNG로 렌더링됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S6B</span></div>
+          <div class="pipeline-body">
+            <h3>이미지 보정 <span class="stage-badge">Image QA</span></h3>
+            <p>
+              수집된 이미지의 저작권, 해상도, 파일 크기를 검증합니다.
+              기준 미달 이미지는 대체 이미지 탐색 또는 AI 생성 이미지로 교체됩니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 편집 및 교정 단계 -->
+      <h2>편집 및 교정 단계</h2>
+
+      <div class="pipeline-list">
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S7</span></div>
+          <div class="pipeline-body">
+            <h3>편집 <span class="stage-badge">Edit</span></h3>
+            <p>
+              챕터 전체를 대상으로 구조 편집을 수행합니다.
+              흐름 개선, 중복 제거, 예시 강화, 단락 재구성을 AI가 처리합니다.
+              편집 전후 단어 수 비교 리포트가 자동으로 생성됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S8</span></div>
+          <div class="pipeline-body">
+            <h3>교정 <span class="stage-badge">Proofread</span></h3>
+            <p>
+              맞춤법, 문법, 일관성(용어, 표기법)을 검사합니다.
+              7가지 QA 게이트(단어 수, 앵커 슬롯, 이미지 태그, 번호 매기기, 참고 문헌, 제목 계층, 코드 블록)를 자동으로 검증합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S8A</span></div>
+          <div class="pipeline-body">
+            <h3>심화 교정 <span class="stage-badge">Deep QA</span></h3>
+            <p>
+              S8 교정 이후에도 남아있는 구조적 문제를 심층 분석합니다.
+              챕터 간 흐름 일관성, 용어 사전 위반, 독자 수준 적합성을 종합 평가하고
+              최종 교정 리포트를 생성합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S9</span></div>
+          <div class="pipeline-body">
+            <h3>출판 원고 <span class="stage-badge">Final</span></h3>
+            <p>
+              모든 챕터를 하나의 마스터 마크다운 파일로 통합합니다.
+              목차, 서문, 저자 소개, 참고 문헌 페이지를 자동으로 추가합니다.
+              최종 단어 수, 챕터 수, QA 통과율이 기록된 원고 완성 리포트가 생성됩니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 출판 단계 -->
+      <h2>Google Books 출판 단계</h2>
+      <p>S9 완성 원고를 Google Books에 출판하기 위한 추가 스테이지입니다.</p>
+
+      <div class="pipeline-list">
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S10</span></div>
+          <div class="pipeline-body">
+            <h3>스타일 가이드 <span class="stage-badge pub">Style</span></h3>
+            <p>
+              출판 대상에 맞는 스타일 가이드를 선택합니다.
+              GBOOK-TECH(기술서), ACAD(학술서), BUSI(비즈니스), NFIC(논픽션),
+              TUTO(튜토리얼), MINI(미니북), CUSTOM(사용자 정의) 중 선택합니다.
+              선택된 스타일 가이드가 전체 원고에 적용되어 폰트, 여백, 제목 스타일이 통일됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="pipeline-step">
+          <div class="pipeline-dot"><span class="stage-id">S11</span></div>
+          <div class="pipeline-body">
+            <h3>EPUB 패키징 <span class="stage-badge pub">EPUB</span></h3>
+            <p>
+              완성된 원고를 EPUB 3.0 표준으로 패키징합니다.
+              ISBN-13, Google Books ID, 메타데이터, SEO 키워드(AI 자동 생성 7개 + 롱테일 5개),
+              커버 이미지를 포함한 완성형 <code>.epub</code> 파일이 생성됩니다.
+              생성된 파일은 Google Books Partner Center에 바로 업로드할 수 있는 규격입니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="info-box success">
+        <div class="info-box-title">출판 가이드</div>
+        EPUB 생성 후 Google Books 업로드 절차는
+        <a href="google-books.html" style="color: #22C55E;">Google Books 출판 가이드</a>를 참고하세요.
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">
+        <div class="logo-icon sm">BE</div>
+        <span>BookEngine</span>
+      </div>
+      <p class="footer-copy">© 2026 BookEngine. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

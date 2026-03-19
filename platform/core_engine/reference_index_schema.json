@@ -1,0 +1,20 @@
+{
+  "schema_id": "reference_index@1.0",
+  "type": "object",
+  "required": [
+    "book_id",
+    "generated_at",
+    "chapters",
+    "policy"
+  ],
+  "entry_required": [
+    "reference_id",
+    "chapter_id",
+    "reference_domain",
+    "source_type",
+    "source_kind",
+    "status",
+    "appendix_required",
+    "required_fields"
+  ]
+}

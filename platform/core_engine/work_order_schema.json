@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "title": "work_order_schema",
+  "type": "object",
+  "required": [
+    "order_id",
+    "book_id",
+    "issued_at",
+    "priority_queue",
+    "blocked_items",
+    "gate_failures",
+    "runtime_alerts"
+  ],
+  "properties": {
+    "order_id": { "type": "string" },
+    "book_id": { "type": "string" },
+    "issued_at": { "type": "string" },
+    "priority_queue": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rank",
+          "stage_id",
+          "chapter_id",
+          "agent_id",
+          "action",
+          "input_artifacts"
+        ],
+        "properties": {
+          "rank": { "type": "integer" },
+          "stage_id": { "type": "string" },
+          "chapter_id": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "action": { "type": "string" },
+          "input_artifacts": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "reason": { "type": "string" },
+          "parallel_group": { "type": "string" }
+          ,
+          "node_strategy": { "type": ["string", "null"] },
+          "node_count": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "blocked_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "chapter_id",
+          "stage_id",
+          "reason",
+          "unblock_condition"
+        ],
+        "properties": {
+          "chapter_id": { "type": "string" },
+          "stage_id": { "type": "string" },
+          "reason": { "type": "string" },
+          "unblock_condition": { "type": "string" }
+        }
+      }
+    },
+    "gate_failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "stage_id",
+          "chapter_id",
+          "return_to_stage",
+          "reason"
+        ],
+        "properties": {
+          "stage_id": { "type": "string" },
+          "chapter_id": { "type": "string" },
+          "return_to_stage": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "runtime_alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "severity",
+          "code",
+          "stage_id",
+          "chapter_id",
+          "detail",
+          "resolution_hint"
+        ],
+        "properties": {
+          "severity": { "type": "string" },
+          "code": { "type": "string" },
+          "stage_id": { "type": "string" },
+          "chapter_id": { "type": "string" },
+          "detail": { "type": "object" },
+          "resolution_hint": { "type": "string" }
+        }
+      }
+    }
+  }
+}

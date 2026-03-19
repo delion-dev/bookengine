@@ -1,0 +1,7 @@
+{
+  "last_request_started_at_epoch": 1773802142.395589,
+  "last_request_started_at_iso": "2026-03-18T11:49:02+09:00",
+  "task_type": "generate_text",
+  "variant_label": "plain_text",
+  "min_interval_ms": 2000
+}

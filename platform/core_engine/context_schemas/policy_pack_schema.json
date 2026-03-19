@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "title": "policy_pack_schema",
+  "type": "object",
+  "required": [
+    "version",
+    "pack_type",
+    "scope",
+    "owner",
+    "mutable",
+    "generated_at",
+    "stage_id",
+    "immutable_sources",
+    "constitution_rules",
+    "execution_contract",
+    "gate_summary",
+    "stage_policy"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "pack_type": { "const": "policy_pack" },
+    "scope": { "const": "global" },
+    "owner": { "type": "string" },
+    "mutable": { "type": "boolean" },
+    "generated_at": { "type": "string" },
+    "stage_id": { "type": "string" },
+    "immutable_sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "constitution_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "execution_contract": { "type": "object" },
+    "gate_summary": { "type": "object" },
+    "stage_policy": { "type": "object" }
+  }
+}

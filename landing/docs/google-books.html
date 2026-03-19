@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Books 출판 가이드 — BookEngine</title>
+  <meta name="description" content="BookEngine으로 생성한 EPUB을 Google Books에 출판하는 전체 가이드. 스타일 가이드 선택부터 Partner Center 업로드까지." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/docs.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon">BE</div>
+        <span class="logo-text">BookEngine</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html#features">기능</a>
+        <a href="../index.html#book">기술 도서</a>
+        <a href="getting-started.html">문서</a>
+        <a href="../installer/download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Docs Layout -->
+  <div class="docs-layout">
+
+    <!-- Sidebar -->
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar-label">문서</div>
+      <nav class="docs-nav">
+        <a href="getting-started.html">시작하기</a>
+        <a href="pipeline.html">AI 집필 파이프라인</a>
+        <a href="api-keys.html">API 키 설정</a>
+        <a href="google-books.html" class="active">Google Books 출판</a>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="docs-content">
+
+      <div class="docs-breadcrumb">
+        <a href="../index.html">홈</a>
+        <span>/</span>
+        <span>Google Books 출판</span>
+      </div>
+
+      <h1>Google Books 출판 가이드</h1>
+      <p class="docs-lead">
+        BookEngine S10~S11 스테이지로 생성한 EPUB 파일을 Google Books에 출판하는 전체 과정을 안내합니다.
+        스타일 가이드 선택부터 Google Books Partner Center 업로드까지 단계별로 설명합니다.
+      </p>
+
+      <!-- 출판 흐름 -->
+      <h2>출판 전체 흐름</h2>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>스타일 가이드 선택</h3>
+            <p>
+              S10 스테이지에서 출판 대상에 맞는 스타일 가이드를 선택합니다.
+              스타일 가이드는 폰트, 여백, 제목 위계, 코드 블록 스타일 등 EPUB 전체 외관을 결정합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>메타데이터 입력</h3>
+            <p>
+              책 제목, 부제, 저자명, 출판사, 언어, 장르 코드, ISBN-13을 입력합니다.
+              ISBN이 없는 경우 BookEngine의 Google Books ID 자동 생성 기능을 이용할 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>SEO 키워드 설정</h3>
+            <p>
+              AI가 책 내용을 분석해 검색 최적화 키워드를 자동 생성합니다.
+              기본 7개 키워드와 롱테일 5개를 검토하고 필요시 수정합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <h3>EPUB 생성</h3>
+            <p>
+              S11 스테이지를 실행하면 EPUB 3.0 표준 파일이 생성됩니다.
+              생성된 <code>.epub</code> 파일은 작업 폴더의 <code>/output</code> 디렉토리에 저장됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">5</div>
+          <div class="step-body">
+            <h3>Google Books Partner Center 업로드</h3>
+            <p>
+              Google Books Partner Center에 로그인한 후 생성된 EPUB 파일을 업로드합니다.
+              Google의 검수 과정(보통 1~3일)을 거쳐 Google Books 스토어에 게시됩니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 스타일 가이드 7종 -->
+      <h2>스타일 가이드 7종</h2>
+      <p>
+        각 스타일 가이드는 출판 장르와 독자층에 최적화된 레이아웃 규칙을 포함합니다.
+        선택 후에도 세부 항목을 개별 조정할 수 있습니다.
+      </p>
+
+      <div class="style-grid">
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-TECH</div>
+          <div class="style-name">기술 서적</div>
+          <div class="style-desc">코드 블록, 다이어그램, 단계별 설명에 최적화. 기술 독자 대상.</div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-ACAD</div>
+          <div class="style-name">학술 / 연구서</div>
+          <div class="style-desc">각주, 참고 문헌, 인용 형식(APA/MLA)을 지원하는 학술 레이아웃.</div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-BUSI</div>
+          <div class="style-name">비즈니스 / 경영</div>
+          <div class="style-desc">인포그래픽, 핵심 요약 박스, 케이스 스터디에 최적화된 비즈니스 스타일.</div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-NFIC</div>
+          <div class="style-name">논픽션 / 자기계발</div>
+          <div class="style-desc">가독성 중심 레이아웃. 넓은 여백, 큰 폰트, 인용구 강조 스타일.</div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-TUTO</div>
+          <div class="style-name">튜토리얼 / 가이드</div>
+          <div class="style-desc">단계별 번호, 팁 박스, 경고 박스 컴포넌트가 내장된 실습서 스타일.</div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-MINI</div>
+          <div class="style-name">미니북 / 리포트</div>
+          <div class="style-desc">30~80페이지 단편 출판물에 최적화된 간결하고 임팩트 있는 레이아웃.</div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-code">GBOOK-CUSTOM</div>
+          <div class="style-name">사용자 정의</div>
+          <div class="style-desc">CSS 파일을 직접 업로드하여 완전히 커스텀한 스타일을 적용합니다.</div>
+        </div>
+
+      </div>
+
+      <!-- EPUB 메타데이터 -->
+      <h2>EPUB 메타데이터 필수 항목</h2>
+      <p>Google Books에서 검수를 통과하려면 아래 메타데이터가 정확히 입력되어야 합니다.</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>형식</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ISBN-13</td>
+            <td><code>978-XXXXXXXXXX</code></td>
+            <td>국제표준도서번호. 없을 경우 Google Books ID로 대체 가능.</td>
+          </tr>
+          <tr>
+            <td>Google Books ID</td>
+            <td>자동 생성</td>
+            <td>BookEngine S11이 자동으로 UUID 형식으로 생성합니다.</td>
+          </tr>
+          <tr>
+            <td>저자(Author)</td>
+            <td>텍스트</td>
+            <td>실명 또는 필명. 복수 저자는 쉼표로 구분.</td>
+          </tr>
+          <tr>
+            <td>언어(Language)</td>
+            <td><code>ko</code>, <code>en</code> 등</td>
+            <td>ISO 639-1 언어 코드. 한국어는 <code>ko</code>.</td>
+          </tr>
+          <tr>
+            <td>장르 코드(Subject)</td>
+            <td>BISAC 코드</td>
+            <td>예: <code>COM051430</code> (AI 기술). 최대 3개 지정 가능.</td>
+          </tr>
+          <tr>
+            <td>출판일(Date)</td>
+            <td><code>YYYY-MM-DD</code></td>
+            <td>EPUB 파일에 삽입되는 공식 출판 날짜.</td>
+          </tr>
+          <tr>
+            <td>커버 이미지</td>
+            <td>JPEG, 2560×1600px 이상</td>
+            <td>Google Books 권장 규격. BookEngine 내 커버 생성 도구 제공.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- SEO 키워드 -->
+      <h2>SEO 키워드 최적화</h2>
+      <p>
+        Google Books에서 독자에게 노출되려면 정확한 키워드 설정이 중요합니다.
+        BookEngine S11이 책 내용을 분석해 최적의 키워드를 자동으로 생성합니다.
+      </p>
+
+      <h3>AI 자동 생성 키워드 구성</h3>
+      <ul>
+        <li><strong>기본 키워드 7개</strong> — 핵심 주제어, 장르, 대상 독자를 반영한 단일 키워드</li>
+        <li><strong>롱테일 키워드 5개</strong> — 검색 의도를 반영한 2~5단어 구문 형태의 키워드</li>
+      </ul>
+
+      <div class="info-box">
+        <div class="info-box-title">키워드 예시 (AI 기술서 기준)</div>
+        기본 7개: <code>AI 집필</code>, <code>자동화 글쓰기</code>, <code>LLM</code>, <code>FastAPI</code>, <code>Next.js</code>, <code>Tauri</code>, <code>파이프라인</code><br />
+        <br />
+        롱테일 5개: <code>AI로 책 쓰는 방법</code>, <code>LLM 기반 콘텐츠 자동화</code>, <code>멀티에이전트 집필 시스템</code>, <code>EPUB 자동 생성 도구</code>, <code>Google Books 출판 자동화</code>
+      </div>
+
+      <p>
+        생성된 키워드는 사용자가 직접 수정하거나 추가할 수 있습니다.
+        키워드는 EPUB 메타데이터의 <code>dc:subject</code> 태그와 Google Books 검색 인덱스 모두에 적용됩니다.
+      </p>
+
+      <!-- Google Books Partner Center -->
+      <h2>Google Books Partner Center 등록 절차</h2>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>Partner Center 계정 생성</h3>
+            <p>
+              <a href="https://play.google.com/books/publish" target="_blank" rel="noopener" style="color: var(--accent);">play.google.com/books/publish</a>에서
+              Google 계정으로 로그인합니다. 처음 방문 시 출판사 정보(이름, 주소, 세금 정보)를 등록합니다.
+              개인 출판자도 등록할 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>새 책 추가</h3>
+            <p>
+              대시보드에서 "책 추가" 버튼을 클릭합니다.
+              ISBN 또는 직접 입력 방식 중 선택합니다.
+              BookEngine에서 생성한 메타데이터를 그대로 입력하면 됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>EPUB 파일 업로드</h3>
+            <p>
+              "파일 업로드" 섹션에서 BookEngine이 생성한 <code>.epub</code> 파일을 선택합니다.
+              커버 이미지도 함께 업로드합니다. 업로드 완료 후 Google이 파일 무결성을 자동 검사합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <h3>가격 및 유통 설정</h3>
+            <p>
+              판매 가격, 무료 공개 범위(미리보기 비율), 유통 국가를 설정합니다.
+              무료 출판도 가능하며, 수익 배분은 판매가의 70%가 저자에게 지급됩니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">5</div>
+          <div class="step-body">
+            <h3>검수 및 게시</h3>
+            <p>
+              Google의 콘텐츠 검수 과정은 보통 1~3 영업일이 소요됩니다.
+              검수 완료 후 Google Books 스토어에 자동으로 게시됩니다.
+              게시 알림은 등록한 이메일로 전송됩니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="info-box success">
+        <div class="info-box-title">출판 완료 후</div>
+        Google Books에 게시된 책은 Google 검색, Google Play Books 앱, Google Books 웹사이트에서 독자에게 노출됩니다.
+        판매 통계와 수익은 Google Books Partner Center 대시보드에서 실시간으로 확인할 수 있습니다.
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">
+        <div class="logo-icon sm">BE</div>
+        <span>BookEngine</span>
+      </div>
+      <p class="footer-copy">© 2026 BookEngine. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

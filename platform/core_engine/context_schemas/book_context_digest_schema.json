@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "title": "book_context_digest_schema",
+  "type": "object",
+  "required": [
+    "version",
+    "pack_type",
+    "scope",
+    "owner",
+    "mutable",
+    "generated_at",
+    "book_id",
+    "working_title",
+    "audience",
+    "tone_profile",
+    "global_characteristics",
+    "local_characteristics"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "pack_type": { "const": "book_context_digest" },
+    "scope": { "const": "local" },
+    "owner": { "type": "string" },
+    "mutable": { "type": "boolean" },
+    "generated_at": { "type": "string" },
+    "book_id": { "type": "string" },
+    "display_name": { "type": "string" },
+    "working_title": { "type": "string" },
+    "audience": { "type": "string" },
+    "language": { "type": "string" },
+    "tone_profile": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "global_characteristics": { "type": "object" },
+    "local_characteristics": { "type": "object" }
+  }
+}

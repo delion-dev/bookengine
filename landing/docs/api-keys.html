@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI API 키 설정 — BookEngine</title>
+  <meta name="description" content="Google Gemini, OpenAI API 키 발급 및 BookEngine에서 설정하는 방법. BYOK 정책 및 비용 안내." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/docs.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon">BE</div>
+        <span class="logo-text">BookEngine</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html#features">기능</a>
+        <a href="../index.html#book">기술 도서</a>
+        <a href="getting-started.html">문서</a>
+        <a href="../installer/download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Docs Layout -->
+  <div class="docs-layout">
+
+    <!-- Sidebar -->
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar-label">문서</div>
+      <nav class="docs-nav">
+        <a href="getting-started.html">시작하기</a>
+        <a href="pipeline.html">AI 집필 파이프라인</a>
+        <a href="api-keys.html" class="active">API 키 설정</a>
+        <a href="google-books.html">Google Books 출판</a>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="docs-content">
+
+      <div class="docs-breadcrumb">
+        <a href="../index.html">홈</a>
+        <span>/</span>
+        <span>API 키 설정</span>
+      </div>
+
+      <h1>AI API 키 설정</h1>
+      <p class="docs-lead">
+        BookEngine은 BYOK(Bring Your Own Key) 방식으로 동작합니다.
+        Google Gemini 또는 OpenAI의 API 키를 직접 발급받아 입력해야 합니다.
+        키는 로컬 PC에만 저장되며 외부 서버로 전송되지 않습니다.
+      </p>
+
+      <!-- BYOK 정책 -->
+      <h2>BYOK 정책</h2>
+
+      <div class="info-box">
+        <div class="info-box-title">키 보안 정책</div>
+        입력한 API 키는 BookEngine 앱 내부의 암호화된 로컬 저장소에만 저장됩니다.
+        BookEngine 서버, 개발사 또는 제3자에게 절대 전송되지 않으며,
+        모든 AI 요청은 사용자의 PC에서 직접 Google/OpenAI 서버로 전송됩니다.
+      </div>
+
+      <p>
+        이 방식의 장점은 사용량에 따른 정확한 비용 통제가 가능하고,
+        데이터 프라이버시가 완전히 보장된다는 점입니다.
+        BookEngine 자체는 AI 처리에 대해 별도 마진을 부과하지 않습니다.
+      </p>
+
+      <!-- API 키 카드 -->
+      <h2>지원 AI 서비스</h2>
+
+      <div class="key-grid">
+
+        <div class="key-card">
+          <div class="key-card-header">
+            <div class="key-card-icon">G</div>
+            <div class="key-card-title">Google Gemini</div>
+          </div>
+          <p>
+            Gemini 2.0 Flash 및 Gemini 2.0 Pro를 지원합니다.
+            빠른 처리 속도와 긴 컨텍스트 창(최대 1M 토큰)으로 장편 원고 집필에 적합합니다.
+          </p>
+          <a href="https://aistudio.google.com" target="_blank" rel="noopener" class="btn-secondary">
+            Google AI Studio 열기
+          </a>
+        </div>
+
+        <div class="key-card">
+          <div class="key-card-header">
+            <div class="key-card-icon">O</div>
+            <div class="key-card-title">OpenAI</div>
+          </div>
+          <p>
+            GPT-4o 및 GPT-4o mini를 지원합니다.
+            고품질 문장 생성과 정밀한 편집 작업에 적합합니다.
+            Gemini와 혼용 사용도 가능합니다.
+          </p>
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" class="btn-secondary">
+            OpenAI Platform 열기
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Gemini 키 발급 -->
+      <h2>Google Gemini API 키 발급</h2>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>Google AI Studio 방문</h3>
+            <p>
+              브라우저에서 <a href="https://aistudio.google.com" target="_blank" rel="noopener" style="color: var(--accent);">aistudio.google.com</a>에 접속합니다.
+              Google 계정으로 로그인합니다. (Google 계정이 없다면 먼저 생성하세요.)
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>API 키 생성</h3>
+            <p>
+              좌측 메뉴에서 "Get API key"를 클릭합니다.
+              "Create API key" 버튼을 누르면 새 키가 즉시 생성됩니다.
+              키는 <code>AIza...</code>로 시작하는 39자 문자열입니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>키 복사 및 저장</h3>
+            <p>
+              생성된 키를 복사합니다. 이 키는 한 번만 표시되므로 안전한 곳에 보관하세요.
+              분실 시에는 새 키를 생성하고 BookEngine에 다시 입력하면 됩니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">무료 사용량</div>
+        Gemini API는 Gemini 2.0 Flash 기준 월 50만 토큰을 무료로 제공합니다 (2026년 기준).
+        단편 도서(5만 단어 이하)는 무료 한도 내에서 처리 가능할 수 있습니다.
+        Google AI Studio에서 현재 사용량과 한도를 확인하세요.
+      </div>
+
+      <!-- OpenAI 키 발급 -->
+      <h2>OpenAI API 키 발급</h2>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>OpenAI Platform 방문</h3>
+            <p>
+              <a href="https://platform.openai.com" target="_blank" rel="noopener" style="color: var(--accent);">platform.openai.com</a>에 접속 후 로그인합니다.
+              계정이 없다면 회원가입을 먼저 진행하세요. 결제 수단 등록이 필요합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>API Keys 메뉴 이동</h3>
+            <p>
+              상단 메뉴에서 "API keys"를 클릭합니다.
+              "+ Create new secret key" 버튼을 눌러 새 키를 생성합니다.
+              키 이름을 <code>BookEngine</code>으로 지정하면 나중에 관리가 편리합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>키 복사</h3>
+            <p>
+              생성된 키(<code>sk-...</code>로 시작)를 복사합니다.
+              이 화면을 닫으면 다시 확인할 수 없으므로 즉시 복사해두세요.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BookEngine에서 키 입력 -->
+      <h2>BookEngine에서 API 키 입력</h2>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>설정 화면 열기</h3>
+            <p>
+              BookEngine 앱 우측 상단의 설정 아이콘(톱니바퀴)을 클릭합니다.
+              또는 메뉴바에서 "설정 → API 키 관리"로 이동합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>키 입력 및 검증</h3>
+            <p>
+              "Gemini API 키" 또는 "OpenAI API 키" 입력란에 복사한 키를 붙여넣습니다.
+              "검증" 버튼을 클릭하면 실제 API 호출로 키의 유효성을 즉시 확인합니다.
+              검증 성공 시 녹색 체크 표시가 나타납니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>기본 모델 선택</h3>
+            <p>
+              스테이지별 기본 AI 모델을 선택합니다. 초안/기획 스테이지는 Gemini 2.0 Flash,
+              편집/교정 스테이지는 GPT-4o를 권장합니다.
+              또는 모든 스테이지에 동일한 모델을 적용할 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 비용 안내 -->
+      <h2>예상 비용 안내</h2>
+      <p>
+        AI API는 사용한 토큰(글자 수) 기준으로 과금됩니다.
+        아래는 일반적인 기술 도서(10만 단어, 20챕터) 1권 기준 예상 비용입니다.
+      </p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>모델</th>
+            <th>입력 토큰 단가</th>
+            <th>출력 토큰 단가</th>
+            <th>1권 예상 비용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Gemini 2.0 Flash</td>
+            <td>$0.075 / 1M</td>
+            <td>$0.30 / 1M</td>
+            <td>약 $2 ~ $5</td>
+          </tr>
+          <tr>
+            <td>Gemini 2.0 Pro</td>
+            <td>$1.25 / 1M</td>
+            <td>$5.00 / 1M</td>
+            <td>약 $20 ~ $50</td>
+          </tr>
+          <tr>
+            <td>GPT-4o</td>
+            <td>$2.50 / 1M</td>
+            <td>$10.00 / 1M</td>
+            <td>약 $30 ~ $80</td>
+          </tr>
+          <tr>
+            <td>GPT-4o mini</td>
+            <td>$0.15 / 1M</td>
+            <td>$0.60 / 1M</td>
+            <td>약 $3 ~ $8</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box warning">
+        <div class="info-box-title">참고 사항</div>
+        위 비용은 2026년 3월 기준 공식 요금표를 기반으로 한 추정값입니다.
+        실제 비용은 책의 분량, 재시도 횟수, 모델 선택에 따라 크게 달라질 수 있습니다.
+        각 AI 서비스 플랫폼에서 지출 한도(Spending Limit)를 설정해 비용을 통제하시기를 권장합니다.
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">
+        <div class="logo-icon sm">BE</div>
+        <span>BookEngine</span>
+      </div>
+      <p class="footer-copy">© 2026 BookEngine. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

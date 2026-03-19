@@ -1,0 +1,19 @@
+{
+  "schema_id": "image_manifest@1.0",
+  "type": "object",
+  "required": [
+    "book_id",
+    "generated_at",
+    "items"
+  ],
+  "item_required": [
+    "image_id",
+    "chapter_id",
+    "planned_anchor_type",
+    "source_mode",
+    "fallback_mode",
+    "rights_status",
+    "appendix_reference_id",
+    "status"
+  ]
+}

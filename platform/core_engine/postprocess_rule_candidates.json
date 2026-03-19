@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-03-15T16:25:00+09:00",
+  "candidates": [
+    {
+      "rule_id": "ag01_reduce_repetitive_refrains",
+      "status": "candidate",
+      "scope": "global",
+      "source_stage": "S4",
+      "title": "Reduce repetitive refrain-style sentences in fallback prose",
+      "description": "Detect repeated closing or payoff sentences across segment nodes and vary them before draft1 is committed.",
+      "detection_hint": "Repeated line families such as '결국 이 장이 하려는 일도...' appearing across multiple segment blocks in the same chapter.",
+      "proposed_fix": "Normalize repeated patterns into one per section and force alternative closing templates for later segments.",
+      "promotion_policy": "Promote to immutable core only after the same repetition pattern is confirmed across at least 3 chapters without harming legitimate emphasis.",
+      "chapters_observed": [
+        "intro"
+      ],
+      "first_seen_at": "2026-03-15T16:25:00+09:00",
+      "last_seen_at": "2026-03-15T16:25:00+09:00"
+    },
+    {
+      "rule_id": "ag01_fix_quote_particle_collisions",
+      "status": "candidate",
+      "scope": "global",
+      "source_stage": "S4",
+      "title": "Fix Korean particle collisions after quoted titles or phrases",
+      "description": "Catch awkward Korean 조사 collisions that appear after quoted expressions or book-level hook phrases.",
+      "detection_hint": "Examples like quoted phrase plus duplicated object/topic particle in a single clause.",
+      "proposed_fix": "Apply a safe Korean quote-particle cleanup pass before draft1 output is finalized.",
+      "promotion_policy": "Promote only after chapter-level review confirms the cleanup is precision-safe across multiple titles and quoted phrases.",
+      "chapters_observed": [
+        "intro"
+      ],
+      "first_seen_at": "2026-03-15T16:25:00+09:00",
+      "last_seen_at": "2026-03-15T16:25:00+09:00"
+    },
+    {
+      "rule_id": "ag01_prefer_book_specific_detail_over_generic_payoff",
+      "status": "candidate",
+      "scope": "global",
+      "source_stage": "S4",
+      "title": "Prefer chapter-specific details over generic payoff language",
+      "description": "When raw guide contains book-specific motifs, the fallback prose should spend more budget on those motifs instead of repeating general payoff language.",
+      "detection_hint": "Segments remain structurally correct but overuse generic reader payoff statements while underusing chapter motifs and chapter goal details.",
+      "proposed_fix": "Raise the priority of chapter_goal, include_items, and local notes before generic payoff sentences are emitted.",
+      "promotion_policy": "Promote after validation across at least one cinema/history chapter and one travel/taste chapter.",
+      "chapters_observed": [
+        "intro"
+      ],
+      "first_seen_at": "2026-03-15T16:25:00+09:00",
+      "last_seen_at": "2026-03-15T16:25:00+09:00"
+    }
+  ]
+}

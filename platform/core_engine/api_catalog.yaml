@@ -1,0 +1,296 @@
+version: "1.0"
+validation_target:
+  book_id: with_the_king
+  display_name: "with the King"
+  book_root: "D:/solar_book/books/with the King"
+
+global_apis:
+  - id: engine.constitution.load
+    mutable: false
+    owner: core_engine
+    group: constitution
+  - id: engine.constitution.assert_compliance
+    mutable: false
+    owner: core_engine
+    group: constitution
+  - id: engine.registry.list_books
+    mutable: false
+    owner: core_engine
+    group: registry
+  - id: engine.registry.get_book
+    mutable: false
+    owner: core_engine
+    group: registry
+  - id: engine.registry.register_book
+    mutable: false
+    owner: core_engine
+    group: registry
+  - id: engine.bootstrap.normalize_inputs
+    mutable: false
+    owner: core_engine
+    group: bootstrap
+  - id: engine.bootstrap.create_book
+    mutable: false
+    owner: core_engine
+    group: bootstrap
+  - id: engine.blueprint.generate
+    mutable: false
+    owner: core_engine
+    group: blueprint
+  - id: engine.blueprint.validate
+    mutable: false
+    owner: core_engine
+    group: blueprint
+  - id: engine.contract.resolve_inputs
+    mutable: false
+    owner: core_engine
+    group: contract
+  - id: engine.contract.validate_input
+    mutable: false
+    owner: core_engine
+    group: contract
+  - id: engine.contract.register_output
+    mutable: false
+    owner: core_engine
+    group: contract
+  - id: engine.context.build_policy_pack
+    mutable: false
+    owner: core_engine
+    group: context
+  - id: engine.context.build_book_digest
+    mutable: false
+    owner: core_engine
+    group: context
+  - id: engine.context.build_chapter_pack
+    mutable: false
+    owner: core_engine
+    group: context
+  - id: engine.context.build_node_pack
+    mutable: false
+    owner: core_engine
+    group: context
+  - id: engine.context.materialize
+    mutable: false
+    owner: core_engine
+    group: context
+  - id: engine.context.measure
+    mutable: false
+    owner: core_engine
+    group: context
+  - id: engine.work_order.issue
+    mutable: false
+    owner: core_engine
+    group: work_order
+  - id: engine.work_order.get_next
+    mutable: false
+    owner: core_engine
+    group: work_order
+  - id: engine.work_order.ack
+    mutable: false
+    owner: core_engine
+    group: work_order
+  - id: engine.stage.run
+    mutable: false
+    owner: core_engine
+    group: stage
+  - id: engine.stage.get_definition
+    mutable: false
+    owner: core_engine
+    group: stage
+  - id: engine.stage.transition
+    mutable: false
+    owner: core_engine
+    group: stage
+  - id: engine.research.plan
+    mutable: false
+    owner: core_engine
+    group: research
+  - id: engine.research.collect
+    mutable: false
+    owner: core_engine
+    group: research
+  - id: engine.research.citations
+    mutable: false
+    owner: core_engine
+    group: research
+  - id: engine.research.refresh
+    mutable: false
+    owner: core_engine
+    group: research
+  - id: engine.targets.plan
+    mutable: false
+    owner: core_engine
+    group: targets
+  - id: engine.targets.get_chapter_target
+    mutable: false
+    owner: core_engine
+    group: targets
+  - id: engine.anchor.load_catalog
+    mutable: false
+    owner: core_engine
+    group: anchor
+  - id: engine.anchor.plan_policy
+    mutable: false
+    owner: core_engine
+    group: anchor
+  - id: engine.anchor.plan_chapter
+    mutable: false
+    owner: core_engine
+    group: anchor
+  - id: engine.anchor.inject
+    mutable: false
+    owner: core_engine
+    group: anchor
+  - id: engine.references.index
+    mutable: false
+    owner: core_engine
+    group: references
+  - id: engine.references.image_manifest
+    mutable: false
+    owner: core_engine
+    group: references
+  - id: engine.references.build_appendix
+    mutable: false
+    owner: core_engine
+    group: references
+  - id: engine.model.route_provider
+    mutable: false
+    owner: core_engine
+    group: model_gateway
+  - id: engine.model.resolve_stage_route
+    mutable: false
+    owner: core_engine
+    group: model_gateway
+  - id: engine.model.generate_text
+    mutable: false
+    owner: core_engine
+    group: model_gateway
+  - id: engine.model.generate_structured
+    mutable: false
+    owner: core_engine
+    group: model_gateway
+  - id: engine.model.grounded_research
+    mutable: false
+    owner: core_engine
+    group: model_gateway
+  - id: engine.model.safety_check
+    mutable: false
+    owner: core_engine
+    group: model_gateway
+  - id: engine.writer.compose
+    mutable: false
+    owner: core_engine
+    group: manuscript
+  - id: engine.review.run
+    mutable: false
+    owner: core_engine
+    group: manuscript
+  - id: engine.copyedit.run
+    mutable: false
+    owner: core_engine
+    group: manuscript
+  - id: engine.gate.decide
+    mutable: false
+    owner: core_engine
+    group: manuscript
+  - id: engine.visual.plan
+    mutable: false
+    owner: core_engine
+    group: visual
+  - id: engine.visual.render
+    mutable: false
+    owner: core_engine
+    group: visual
+  - id: engine.visual.integrate
+    mutable: false
+    owner: core_engine
+    group: visual
+  - id: engine.publish.build_epub
+    mutable: false
+    owner: core_engine
+    group: publication
+  - id: engine.publish.build_pdf
+    mutable: false
+    owner: core_engine
+    group: publication
+  - id: engine.publish.validate_metadata
+    mutable: false
+    owner: core_engine
+    group: publication
+  - id: engine.publish.validate_google_play
+    mutable: false
+    owner: core_engine
+    group: publication
+  - id: engine.publish.package_release
+    mutable: false
+    owner: core_engine
+    group: publication
+  - id: engine.session.open
+    mutable: false
+    owner: core_engine
+    group: session
+  - id: engine.session.close
+    mutable: false
+    owner: core_engine
+    group: session
+  - id: engine.runtime.diagnose
+    mutable: false
+    owner: core_engine
+    group: runtime
+  - id: engine.telemetry.build_dashboard
+    mutable: false
+    owner: core_engine
+    group: runtime
+
+local_apis:
+  - id: book.profile.get
+    mutable: true
+    owner: book_local
+    group: profile
+  - id: book.outline.get
+    mutable: true
+    owner: book_local
+    group: outline
+  - id: book.style.get
+    mutable: true
+    owner: book_local
+    group: style
+  - id: book.context_digest.get
+    mutable: true
+    owner: book_local
+    group: context
+  - id: book.chapter_context.get
+    mutable: true
+    owner: book_local
+    group: context
+  - id: book.quality.get
+    mutable: true
+    owner: book_local
+    group: quality
+  - id: book.domain_knowledge.resolve
+    mutable: true
+    owner: book_local
+    group: knowledge
+  - id: book.word_target.get
+    mutable: true
+    owner: book_local
+    group: word_targets
+  - id: book.visual_policy.get
+    mutable: true
+    owner: book_local
+    group: visual_policy
+  - id: book.reference_policy.get
+    mutable: true
+    owner: book_local
+    group: reference_policy
+  - id: book.metadata.get
+    mutable: true
+    owner: book_local
+    group: metadata
+  - id: book.assets.list
+    mutable: true
+    owner: book_local
+    group: assets
+
+promotion_rule:
+  description: "전역 API는 검증 완료 후 Core Engine으로 승격하며, 이후 mutable=false로 유지한다."

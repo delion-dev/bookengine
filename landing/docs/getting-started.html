@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>시작하기 — BookEngine</title>
+  <meta name="description" content="BookEngine 설치 및 초기 설정 가이드. 시스템 요구사항부터 첫 번째 책 등록까지." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/docs.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <a href="../index.html" class="logo">
+        <div class="logo-icon">BE</div>
+        <span class="logo-text">BookEngine</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html#features">기능</a>
+        <a href="../index.html#book">기술 도서</a>
+        <a href="getting-started.html">문서</a>
+        <a href="../installer/download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Docs Layout -->
+  <div class="docs-layout">
+
+    <!-- Sidebar -->
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar-label">문서</div>
+      <nav class="docs-nav">
+        <a href="getting-started.html" class="active">시작하기</a>
+        <a href="pipeline.html">AI 집필 파이프라인</a>
+        <a href="api-keys.html">API 키 설정</a>
+        <a href="google-books.html">Google Books 출판</a>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="docs-content">
+
+      <div class="docs-breadcrumb">
+        <a href="../index.html">홈</a>
+        <span>/</span>
+        <span>시작하기</span>
+      </div>
+
+      <h1>시작하기</h1>
+      <p class="docs-lead">
+        BookEngine 설치 및 초기 설정 가이드입니다. 아래 단계를 순서대로 따라하면 15분 안에 첫 번째 AI 집필을 시작할 수 있습니다.
+      </p>
+
+      <!-- 시스템 요구사항 -->
+      <h2>시스템 요구사항</h2>
+      <p>BookEngine은 로컬 설치형 데스크톱 앱입니다. 아래 환경이 갖춰져 있어야 정상 동작합니다.</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>최소 요구사항</th>
+            <th>권장 사양</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>운영체제</td>
+            <td>Windows 10 (64비트)</td>
+            <td>Windows 11</td>
+          </tr>
+          <tr>
+            <td>RAM</td>
+            <td>8 GB</td>
+            <td>16 GB 이상</td>
+          </tr>
+          <tr>
+            <td>저장공간</td>
+            <td>4 GB 여유 공간</td>
+            <td>SSD 10 GB 이상</td>
+          </tr>
+          <tr>
+            <td>인터넷</td>
+            <td>AI API 호출 시 필요</td>
+            <td>상시 연결 권장</td>
+          </tr>
+          <tr>
+            <td>기타</td>
+            <td>—</td>
+            <td>WebView2 런타임 (자동 설치)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box">
+        <div class="info-box-title">AI API 키 필요</div>
+        BookEngine은 BYOK(Bring Your Own Key) 방식입니다. Google Gemini 또는 OpenAI API 키가 반드시 필요합니다.
+        키 발급 방법은 <a href="api-keys.html" style="color: var(--accent);">API 키 설정 가이드</a>를 참고하세요.
+      </div>
+
+      <!-- 설치 단계 -->
+      <h2>설치 단계</h2>
+      <p>BookEngine 설치는 다음 4단계로 완료됩니다.</p>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>설치 파일 다운로드</h3>
+            <p>
+              <a href="../installer/download.html" style="color: var(--accent);">다운로드 페이지</a>에서
+              <code>BookEngine-Setup-x.x.x.msi</code> 파일을 내려받습니다.
+              파일 크기는 약 80~120 MB이며, Windows Installer 패키지 형식입니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>설치 실행</h3>
+            <p>
+              다운로드한 <code>.msi</code> 파일을 실행합니다.
+              "Windows의 PC 보호" 경고가 표시될 경우 "추가 정보" → "실행"을 클릭하세요.
+              설치 마법사의 안내에 따라 설치 경로를 선택하고 완료합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>라이선스 키 입력</h3>
+            <p>
+              앱을 처음 실행하면 라이선스 활성화 화면이 나타납니다.
+              구매한 라이선스 키(<code>XXXX-XXXX-XXXX-XXXX</code> 형식)를 입력하고 "활성화" 버튼을 누릅니다.
+              무료 체험판은 키 없이 30일간 사용할 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <h3>AI API 키 설정</h3>
+            <p>
+              라이선스 활성화 후 설정 화면으로 이동합니다.
+              "API 키 관리" 탭에서 Google Gemini 키 또는 OpenAI 키를 입력하세요.
+              키는 로컬 PC에만 저장되며 외부로 전송되지 않습니다.
+              자세한 방법은 <a href="api-keys.html" style="color: var(--accent);">API 키 설정 가이드</a>를 참고하세요.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 첫 번째 책 등록 -->
+      <h2>첫 번째 책 등록</h2>
+      <p>설치가 완료되면 대시보드에서 새 책 프로젝트를 생성할 수 있습니다.</p>
+
+      <div class="step-list">
+
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>책 이름 입력</h3>
+            <p>
+              대시보드 우측 상단의 "새 책 만들기" 버튼을 클릭합니다.
+              책 제목과 부제를 입력합니다. 나중에 수정할 수 있으므로 임시 제목도 괜찮습니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>작업 폴더 선택</h3>
+            <p>
+              책 원고 파일이 저장될 폴더를 선택합니다.
+              폴더 탐색기가 열리면 원하는 위치를 지정하세요.
+              BookEngine이 해당 폴더 내에 챕터별 마크다운 파일을 자동으로 생성합니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>기획안 파일 업로드</h3>
+            <p>
+              AI 파이프라인이 책의 방향성을 이해할 수 있도록 기획안 파일을 업로드합니다.
+              지원 형식: <code>.txt</code>, <code>.md</code>, <code>.docx</code>.
+              기획안이 없다면 BookEngine의 인터랙티브 기획 마법사를 이용해 생성할 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="info-box success">
+        <div class="info-box-title">설정 완료</div>
+        책 등록이 완료되면 AI 집필 파이프라인 대시보드로 이동합니다.
+        S-1 단계(사전구성)부터 순서대로 실행하거나, 원하는 스테이지를 선택해 실행할 수 있습니다.
+        전체 파이프라인 흐름은 <a href="pipeline.html" style="color: #22C55E;">AI 집필 파이프라인 가이드</a>를 참고하세요.
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">
+        <div class="logo-icon sm">BE</div>
+        <span>BookEngine</span>
+      </div>
+      <p class="footer-copy">© 2026 BookEngine. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

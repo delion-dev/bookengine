@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookEngine — AI 기반 도서 자동 집필 플랫폼</title>
+  <meta name="description" content="AI로 책을 쓰세요. BookEngine은 Google Gemini / OpenAI를 활용한 도서 자동 집필 파이프라인 플랫폼입니다." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <!-- Google AdSense -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <div class="logo">
+        <div class="logo-icon">BE</div>
+        <span class="logo-text">BookEngine</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">기능</a>
+        <a href="#book">기술 도서</a>
+        <a href="docs/getting-started.html">문서</a>
+        <a href="pricing.html">요금제</a>
+        <a href="installer/download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container hero-content">
+      <div class="badge">AI × 도서 집필</div>
+      <h1>AI로 책을 쓰는<br /><span class="gradient-text">새로운 방식</span></h1>
+      <p class="hero-desc">
+        Google Gemini와 OpenAI를 활용한 17단계 자동 집필 파이프라인.<br />
+        기획안 하나로 챕터 초안부터 QA, 출판 원고까지.
+      </p>
+      <div class="hero-cta">
+        <a href="installer/download.html" class="btn-primary">
+          무료 다운로드 <span class="arrow">→</span>
+        </a>
+        <a href="#features" class="btn-ghost">기능 살펴보기</a>
+      </div>
+      <p class="hero-note">Windows 10/11 · 로컬 설치형 · 인터넷 필요 없음</p>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>핵심 기능</h2>
+        <p>복잡한 집필 과정을 체계적인 파이프라인으로</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>17단계 파이프라인</h3>
+          <p>아키텍처 설계부터 원고 편집, QA, 자산 수집까지 자동화된 단계별 워크플로.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>자동 QA 검증</h3>
+          <p>챕터 완성도, 앵커 슬롯, 단어 수, 이미지 자산 등 7가지 항목 자동 검증.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>멀티 AI 지원</h3>
+          <p>Gemini 2.0 Flash / Pro, GPT-4o. 스테이지별 최적 모델 자동 라우팅.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>실시간 모니터링</h3>
+          <p>챕터×스테이지 매트릭스 대시보드로 전체 진행 상황을 한눈에.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>로컬 완전 실행</h3>
+          <p>모든 데이터는 내 PC에. 클라우드 의존 없는 완전 오프라인 처리.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3>Work Order 시스템</h3>
+          <p>우선순위 기반 작업 큐, 게이트 실패 자동 복구, Self-Healing 파이프라인.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Book Promo -->
+  <section id="book" class="book-promo">
+    <div class="container book-promo-inner">
+      <div class="book-promo-text">
+        <div class="badge">기술 도서</div>
+        <h2>이 앱으로 직접 쓴<br />기술 도서</h2>
+        <p>
+          BookEngine 개발 과정을 담은 기술 도서.
+          AI 파이프라인 설계, 멀티에이전트 오케스트레이션,
+          FastAPI + Next.js + Tauri 풀스택 구현까지.
+        </p>
+        <a href="#" class="btn-secondary">출판 예정 — 알림 신청</a>
+      </div>
+      <div class="book-cover">
+        <div class="book-mock">
+          <div class="book-title">BookEngine</div>
+          <div class="book-sub">AI 도서 자동 집필 파이프라인</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-logo">
+        <div class="logo-icon sm">BE</div>
+        <span>BookEngine</span>
+      </div>
+      <p class="footer-copy">© 2026 BookEngine. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

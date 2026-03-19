@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "title": "node_context_pack_schema",
+  "type": "object",
+  "required": [
+    "version",
+    "pack_type",
+    "scope",
+    "owner",
+    "mutable",
+    "generated_at",
+    "stage_id",
+    "chapter_id",
+    "node_id",
+    "global_characteristics",
+    "local_characteristics"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "pack_type": { "const": "node_context_pack" },
+    "scope": { "const": "local" },
+    "owner": { "type": "string" },
+    "mutable": { "type": "boolean" },
+    "generated_at": { "type": "string" },
+    "stage_id": { "type": "string" },
+    "chapter_id": { "type": "string" },
+    "node_id": { "type": "string" },
+    "global_characteristics": { "type": "object" },
+    "local_characteristics": { "type": "object" }
+  }
+}

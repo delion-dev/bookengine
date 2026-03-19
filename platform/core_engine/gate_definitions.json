@@ -1,0 +1,246 @@
+{
+  "version": "1.0",
+  "gates": [
+    {
+      "gate_id": "input_contract_pass",
+      "stage_id": "S-1",
+      "checks": [
+        "proposal_exists",
+        "toc_seed_exists",
+        "intake_manifest_schema_valid"
+      ],
+      "on_fail": {
+        "return_to_stage": "S-1",
+        "severity": "high"
+      }
+    },
+    {
+      "gate_id": "blueprint_complete",
+      "stage_id": "S0",
+      "checks": [
+        "book_config_exists",
+        "word_targets_defined",
+        "anchor_policy_defined",
+        "book_blueprint_exists",
+        "style_guide_exists",
+        "quality_criteria_exists"
+      ],
+      "on_fail": {
+        "return_to_stage": "S0",
+        "severity": "high"
+      }
+    },
+    {
+      "gate_id": "work_order_issued",
+      "stage_id": "S1",
+      "checks": [
+        "pipeline_snapshot_valid",
+        "work_order_valid"
+      ],
+      "on_fail": {
+        "return_to_stage": "S1",
+        "severity": "medium"
+      }
+    },
+    {
+      "gate_id": "research_plan_complete",
+      "stage_id": "S2",
+      "checks": [
+        "research_questions_present",
+        "source_queue_present",
+        "freshness_policy_defined",
+        "reference_index_present",
+        "image_manifest_present",
+        "appendix_reference_scaffold_present"
+      ],
+      "on_fail": {
+        "return_to_stage": "S2",
+        "severity": "high"
+      }
+    },
+    {
+      "gate_id": "raw_guides_complete",
+      "stage_id": "S3",
+      "checks": [
+        "chapter_goal_defined",
+        "section_guides_present",
+        "exclusion_rules_present",
+        "word_budget_present",
+        "anchor_plan_present"
+      ],
+      "on_fail": {
+        "return_to_stage": "S3",
+        "severity": "medium"
+      }
+    },
+    {
+      "gate_id": "draft1_complete",
+      "stage_id": "S4",
+      "checks": [
+        "context_budget_within_policy",
+        "chapter_structure_complete",
+        "min_length_reached",
+        "required_sections_present",
+        "segment_plan_exists",
+        "narrative_design_exists",
+        "density_audit_exists",
+        "session_report_exists",
+        "s4_expansion_cap_respected"
+      ],
+      "on_fail": {
+        "return_to_stage": "S4",
+        "severity": "high"
+      }
+    },
+    {
+      "gate_id": "draft1_anchor_complete",
+      "stage_id": "S4A",
+      "checks": [
+        "chapter_structure_complete",
+        "required_sections_present",
+        "anchor_blocks_inserted",
+        "anchor_injection_report_exists",
+        "anchor_scope_integrity_pass"
+      ],
+      "on_fail": {
+        "return_to_stage": "S4A",
+        "severity": "high"
+      }
+    },
+    {
+      "gate_id": "review_pass",
+      "stage_id": "S5",
+      "checks": [
+        "context_budget_within_policy",
+        "review_report_exists",
+        "rights_review_exists",
+        "citations_attached",
+        "grounded_body_evidence_attached",
+        "rights_provenance_complete",
+        "freshness_checked",
+        "unsupported_claims_zero"
+      ],
+      "on_fail": {
+        "return_to_stage": "S5",
+        "severity": "high"
+      }
+    },
+    {
+      "gate_id": "visual_plan_complete",
+      "stage_id": "S6",
+      "checks": [
+        "draft3_reading_view_clean",
+        "visual_plan_exists",
+        "visual_support_exists",
+        "anchor_ids_unique",
+        "priority_items_present",
+        "numeric_support_packets_present"
+      ],
+      "on_fail": {
+        "return_to_stage": "S6",
+        "severity": "medium"
+      }
+    },
+    {
+      "gate_id": "asset_collection_handoff_complete",
+      "stage_id": "S6A",
+      "checks": [
+        "asset_collection_manifest_exists",
+        "asset_collection_handoff_exists",
+        "asset_filename_contract_defined"
+      ],
+      "on_fail": {
+        "return_to_stage": "S6A",
+        "severity": "medium"
+      }
+    },
+    {
+      "gate_id": "image_asset_ingestion_pass",
+      "stage_id": "S6B",
+      "checks": [
+        "ingestion_report_exists",
+        "ingestion_status_synced"
+      ],
+      "on_fail": {
+        "return_to_stage": "S6B",
+        "severity": "medium"
+      }
+    },
+    {
+      "gate_id": "visual_render_pass",
+      "stage_id": "S7",
+      "checks": [
+        "visual_bundle_exists",
+        "anchor_resolve_rate_threshold",
+        "draft4_exists"
+      ],
+      "on_fail": {
+        "return_to_stage": "S7",
+        "severity": "medium"
+      }
+    },
+    {
+      "gate_id": "copyedit_gate_pass",
+      "stage_id": "S8",
+      "checks": [
+        "style_violations_zero_or_acceptable",
+        "structure_integrity_pass",
+        "proofreading_report_exists"
+      ],
+      "on_fail": {
+        "return_to_stage": "S8",
+        "severity": "high",
+        "escalate_to_orchestrator": true
+      }
+    },
+    {
+      "gate_id": "amplification_pass",
+      "stage_id": "S8A",
+      "checks": [
+        "context_budget_within_policy",
+        "draft6_exists",
+        "amplification_report_exists",
+        "amplification_integrity_pass",
+        "s8a_rewrite_target_cap_respected",
+        "s8a_live_contribution_present",
+        "s8a_section_coverage_balanced",
+        "s8a_amplification_ratio_within_cap"
+      ],
+      "on_fail": {
+        "return_to_stage": "S8A",
+        "severity": "medium",
+        "escalate_to_orchestrator": false
+      }
+    },
+    {
+      "gate_id": "publication_clearance",
+      "stage_id": "SQA",
+      "checks": [
+        "qa_clearance_report_exists",
+        "qa_verdict_pass"
+      ],
+      "on_fail": {
+        "return_to_stage": "SQA",
+        "severity": "high",
+        "escalate_to_orchestrator": true
+      }
+    },
+    {
+      "gate_id": "publication_pass",
+      "stage_id": "S9",
+      "checks": [
+        "epub_generated",
+        "pdf_generated",
+        "metadata_validation_pass",
+        "seo_pack_exists",
+        "platform_validation_pass",
+        "publication_manifest_exists"
+      ],
+      "on_fail": {
+        "return_to_stage": "S9",
+        "severity": "critical",
+        "escalate_to_orchestrator": true
+      }
+    }
+  ]
+}

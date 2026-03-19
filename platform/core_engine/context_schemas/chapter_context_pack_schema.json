@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "title": "chapter_context_pack_schema",
+  "type": "object",
+  "required": [
+    "version",
+    "pack_type",
+    "scope",
+    "owner",
+    "mutable",
+    "generated_at",
+    "stage_id",
+    "chapter_id",
+    "chapter_profile",
+    "global_characteristics",
+    "local_characteristics",
+    "stage_state"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "pack_type": { "const": "chapter_context_pack" },
+    "scope": { "const": "local" },
+    "owner": { "type": "string" },
+    "mutable": { "type": "boolean" },
+    "generated_at": { "type": "string" },
+    "stage_id": { "type": "string" },
+    "chapter_id": { "type": "string" },
+    "chapter_profile": { "type": "object" },
+    "global_characteristics": { "type": "object" },
+    "local_characteristics": { "type": "object" },
+    "stage_state": { "type": "object" }
+  }
+}

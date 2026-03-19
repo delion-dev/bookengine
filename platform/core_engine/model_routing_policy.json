@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "principle": "stage_scoped_model_routing",
+  "task_defaults": {
+    "generate_text": {
+      "model_profile": "balanced",
+      "cost_profile": "balanced",
+      "recommended_max_output_tokens": 3072
+    },
+    "generate_structured": {
+      "model_profile": "balanced",
+      "cost_profile": "balanced",
+      "recommended_max_output_tokens": 4096
+    },
+    "grounded_research": {
+      "model_profile": "high_quality",
+      "cost_profile": "balanced",
+      "recommended_max_output_tokens": 4096
+    },
+    "safety_check": {
+      "model_profile": "fast",
+      "cost_profile": "fast",
+      "recommended_max_output_tokens": 2048
+    }
+  },
+  "stage_policies": {
+    "S4": {
+      "task_policies": {
+        "generate_text": {
+          "default": {
+            "model_profile": "balanced",
+            "cost_profile": "balanced",
+            "recommended_max_output_tokens": 3072,
+            "note": "Draft generation balances quality and throughput."
+          },
+          "section_overrides": {
+            "insight": {
+              "model_profile": "high_quality",
+              "cost_profile": "high_quality"
+            },
+            "context": {
+              "model_profile": "high_quality",
+              "cost_profile": "balanced"
+            }
+          }
+        },
+        "grounded_research": {
+          "default": {
+            "model_profile": "high_quality",
+            "cost_profile": "balanced",
+            "recommended_max_output_tokens": 4096,
+            "note": "Grounded brief prefers evidence quality over speed."
+          }
+        }
+      }
+    },
+    "S5": {
+      "task_policies": {
+        "grounded_research": {
+          "default": {
+            "model_profile": "high_quality",
+            "cost_profile": "balanced",
+            "recommended_max_output_tokens": 4096,
+            "note": "Review requires attributable evidence and trust filtering."
+          }
+        }
+      }
+    },
+    "S8A": {
+      "task_policies": {
+        "generate_text": {
+          "default": {
+            "model_profile": "balanced",
+            "cost_profile": "balanced",
+            "recommended_max_output_tokens": 3072,
+            "note": "Tone amplification should stay compact and conservative."
+          },
+          "section_overrides": {
+            "insight": {
+              "model_profile": "high_quality",
+              "cost_profile": "high_quality"
+            },
+            "context": {
+              "model_profile": "high_quality",
+              "cost_profile": "balanced"
+            },
+            "hook": {
+              "model_profile": "balanced",
+              "cost_profile": "balanced"
+            },
+            "takeaway": {
+              "model_profile": "balanced",
+              "cost_profile": "balanced"
+            }
+          }
+        }
+      }
+    }
+  }
+}

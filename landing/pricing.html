@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>요금제 — BookEngine</title>
+  <meta name="description" content="BookEngine 라이선스 플랜. 무료 체험부터 팀 플랜까지. 로컬 설치형, 구독 없음." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    /* Pricing-specific styles */
+    .pricing-hero {
+      padding: 7rem 2rem 4rem;
+      text-align: center;
+    }
+    .pricing-hero h1 {
+      font-size: 2.75rem;
+      font-weight: 700;
+      color: #ededef;
+      margin-bottom: 1rem;
+    }
+    .pricing-hero p {
+      color: #8a8f98;
+      font-size: 1.1rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 3rem auto;
+      padding: 0 2rem;
+    }
+
+    .plan-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .plan-card:hover {
+      border-color: rgba(94,106,210,0.3);
+      transform: translateY(-3px);
+    }
+    .plan-card.featured {
+      border-color: rgba(94,106,210,0.5);
+      background: rgba(94,106,210,0.07);
+      position: relative;
+    }
+    .plan-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #5E6AD2;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.25rem 1rem;
+      border-radius: 99px;
+      white-space: nowrap;
+      letter-spacing: 0.05em;
+    }
+
+    .plan-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #5E6AD2;
+      margin-bottom: 0.75rem;
+    }
+    .plan-price {
+      margin-bottom: 0.5rem;
+    }
+    .plan-price .amount {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #ededef;
+      line-height: 1;
+    }
+    .plan-price .currency {
+      font-size: 1.2rem;
+      color: #8a8f98;
+      vertical-align: super;
+      margin-right: 0.1rem;
+    }
+    .plan-price .period {
+      font-size: 0.85rem;
+      color: #8a8f98;
+      margin-left: 0.3rem;
+    }
+    .plan-note {
+      font-size: 0.8rem;
+      color: #4b5563;
+      margin-bottom: 1.5rem;
+    }
+    .plan-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin-bottom: 1.5rem;
+    }
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 2rem;
+      flex: 1;
+    }
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.875rem;
+      color: #8a8f98;
+      padding: 0.4rem 0;
+    }
+    .plan-features li .check {
+      color: #5E6AD2;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .plan-features li.muted {
+      color: #4b5563;
+    }
+    .plan-features li.muted .check {
+      color: #374151;
+    }
+
+    .plan-cta {
+      display: block;
+      text-align: center;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .plan-cta.primary {
+      background: #5E6AD2;
+      color: white;
+    }
+    .plan-cta.primary:hover { background: #7C85E0; }
+    .plan-cta.outline {
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #ededef;
+    }
+    .plan-cta.outline:hover { border-color: #5E6AD2; color: #5E6AD2; }
+
+    /* FAQ */
+    .faq-section {
+      max-width: 700px;
+      margin: 4rem auto;
+      padding: 0 2rem 6rem;
+    }
+    .faq-section h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ededef;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .faq-item {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 1.25rem 0;
+    }
+    .faq-q {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #ededef;
+      margin-bottom: 0.5rem;
+    }
+    .faq-a {
+      font-size: 0.875rem;
+      color: #8a8f98;
+      line-height: 1.7;
+    }
+
+    /* Key highlight */
+    .key-highlight {
+      background: rgba(94,106,210,0.08);
+      border: 1px solid rgba(94,106,210,0.2);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      max-width: 700px;
+      margin: 0 auto 2rem;
+    }
+    .key-highlight-icon { font-size: 1.5rem; }
+    .key-highlight-text { font-size: 0.875rem; color: #8a8f98; }
+    .key-highlight-text strong { color: #ededef; }
+
+    @media (max-width: 768px) {
+      .pricing-grid { grid-template-columns: 1fr; }
+      .pricing-hero h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <nav class="container nav">
+      <div class="logo">
+        <a href="index.html" style="display:flex;align-items:center;gap:0.6rem;text-decoration:none;">
+          <div class="logo-icon">BE</div>
+          <span class="logo-text">BookEngine</span>
+        </a>
+      </div>
+      <div class="nav-links">
+        <a href="index.html#features">기능</a>
+        <a href="index.html#book">기술 도서</a>
+        <a href="docs/getting-started.html">문서</a>
+        <a href="pricing.html" style="color:#ededef">요금제</a>
+        <a href="installer/download.html" class="btn-nav">다운로드</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="pricing-hero">
+    <div class="badge">라이선스 플랜</div>
+    <h1>심플한 가격, <span class="gradient-text">영구 라이선스</span></h1>
+    <p>월정액 구독 없음. 한 번 구매 후 영구 사용.<br />AI API는 본인 계정을 사용하므로 별도 추가 비용 없음.</p>
+  </section>
+
+  <!-- Key highlight -->
+  <div style="padding:0 2rem">
+    <div class="key-highlight">
+      <span class="key-highlight-icon">🔑</span>
+      <p class="key-highlight-text">
+        <strong>BYOK (Bring Your Own Key)</strong> — AI API 비용은 Google Gemini / OpenAI 본인 계정에서 직접 관리됩니다.
+        BookEngine은 API 키를 로컬에만 저장하며 외부로 전송하지 않습니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- Plans -->
+  <div class="pricing-grid">
+
+    <!-- Free Trial -->
+    <div class="plan-card">
+      <p class="plan-name">무료 체험</p>
+      <div class="plan-price">
+        <span class="currency">$</span><span class="amount">0</span>
+      </div>
+      <p class="plan-note">라이선스 키 불필요 · 즉시 시작</p>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> 책 1권 등록</li>
+        <li><span class="check">✓</span> AI 파이프라인 S-1 ~ S4 (4스테이지)</li>
+        <li><span class="check">✓</span> 기획안 분석 + 목차 생성 + 초안</li>
+        <li><span class="check">✓</span> 기본 QA 리포트</li>
+        <li class="muted"><span class="check">—</span> S5 ~ S9 (자료/교정/출판)</li>
+        <li class="muted"><span class="check">—</span> Google Books 출판 파이프라인</li>
+        <li class="muted"><span class="check">—</span> EPUB 생성</li>
+        <li class="muted"><span class="check">—</span> 기술 지원</li>
+      </ul>
+      <a href="installer/download.html" class="plan-cta outline">무료 다운로드</a>
+    </div>
+
+    <!-- Personal (Featured) -->
+    <div class="plan-card featured">
+      <span class="plan-badge">가장 인기</span>
+      <p class="plan-name">개인</p>
+      <div class="plan-price">
+        <span class="currency">$</span><span class="amount">49</span>
+        <span class="period">/ 영구</span>
+      </div>
+      <p class="plan-note">1PC 라이선스 · 업데이트 1년 포함</p>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> <strong style="color:#ededef">책 무제한 등록</strong></li>
+        <li><span class="check">✓</span> AI 파이프라인 전 스테이지 (S-1 ~ S9)</li>
+        <li><span class="check">✓</span> Google Books 출판 파이프라인 (S10/S11)</li>
+        <li><span class="check">✓</span> EPUB 3.x 생성 + 다운로드</li>
+        <li><span class="check">✓</span> 7종 스타일 가이드 템플릿</li>
+        <li><span class="check">✓</span> AI SEO 키워드 자동 생성</li>
+        <li><span class="check">✓</span> QA + Work Order 전체 기능</li>
+        <li class="muted"><span class="check">—</span> 팀 공유 / 다중 PC</li>
+      </ul>
+      <a href="installer/download.html" class="plan-cta primary">라이선스 구매</a>
+    </div>
+
+    <!-- Team -->
+    <div class="plan-card">
+      <p class="plan-name">팀</p>
+      <div class="plan-price">
+        <span class="currency">$</span><span class="amount">149</span>
+        <span class="period">/ 영구</span>
+      </div>
+      <p class="plan-note">5PC 라이선스 · 업데이트 2년 포함</p>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li><span class="check">✓</span> 개인 플랜 전체 기능</li>
+        <li><span class="check">✓</span> <strong style="color:#ededef">5PC 동시 활성화</strong></li>
+        <li><span class="check">✓</span> 팀 공유 라이선스 관리</li>
+        <li><span class="check">✓</span> 우선 이메일 기술 지원</li>
+        <li><span class="check">✓</span> 업데이트 2년 포함</li>
+        <li><span class="check">✓</span> 추가 스타일 가이드 템플릿 (출시 예정)</li>
+        <li><span class="check">✓</span> 출판 파이프라인 배치 실행 (출시 예정)</li>
+        <li><span class="check">✓</span> 온보딩 세션 1회 포함</li>
+      </ul>
+      <a href="mailto:hello@bookengine.io?subject=팀 플랜 문의" class="plan-cta outline">팀 플랜 문의</a>
+    </div>
+
+  </div>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <h2>자주 묻는 질문</h2>
+
+    <div class="faq-item">
+      <p class="faq-q">월 구독이 없나요?</p>
+      <p class="faq-a">
+        네. BookEngine은 월정액 구독 없이 1회 구매 후 영구 사용합니다.
+        업데이트는 구매 후 1년(개인) / 2년(팀) 포함이며, 이후에는 선택적으로 업그레이드할 수 있습니다.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">AI API 비용은 별도인가요?</p>
+      <p class="faq-a">
+        BookEngine은 BYOK(Bring Your Own Key) 방식으로 동작합니다.
+        Google Gemini / OpenAI API 키를 직접 발급해 입력하면 해당 계정으로 요금이 청구됩니다.
+        일반적인 도서 1권 집필 시 Gemini Flash 기준 약 $1~3 수준입니다.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">인터넷 연결이 필요한가요?</p>
+      <p class="faq-a">
+        라이선스 활성화는 최초 1회 온라인 인증이 필요합니다. 이후 집필 작업은 완전 오프라인 모드로 동작하며,
+        AI API 호출 시에만 인터넷을 사용합니다.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">Mac / Linux는 지원하나요?</p>
+      <p class="faq-a">
+        현재 Windows 10/11만 지원합니다. Mac / Linux 버전은 v0.2.0 로드맵에 포함되어 있으며
+        출시 알림은 GitHub Releases를 통해 받을 수 있습니다.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">환불 정책이 어떻게 되나요?</p>
+      <p class="faq-a">
+        구매 후 14일 이내, 도서 생성 횟수 3회 미만인 경우 전액 환불을 지원합니다.
+        문의는 hello@bookengine.io로 보내주세요.
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">라이선스 키는 어디서 받나요?</p>
+      <p class="faq-a">
+        구매 완료 후 이메일로 라이선스 키(BKENG-XXXXX-XXXXX-XXXXX-XXXXX 형식)가 발송됩니다.
+        BookEngine 앱 최초 실행 시 키 입력 화면에 붙여넣기 하면 즉시 활성화됩니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <div class="logo">
+            <div class="logo-icon">BE</div>
+            <span class="logo-text">BookEngine</span>
+          </div>
+          <p class="footer-tagline">AI 기반 도서 자동 집필 플랫폼</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>제품</h4>
+            <a href="index.html#features">기능</a>
+            <a href="pricing.html">요금제</a>
+            <a href="installer/download.html">다운로드</a>
+          </div>
+          <div class="footer-col">
+            <h4>문서</h4>
+            <a href="docs/getting-started.html">시작하기</a>
+            <a href="docs/pipeline.html">파이프라인</a>
+            <a href="docs/api-keys.html">API 키 설정</a>
+            <a href="docs/google-books.html">Google Books</a>
+          </div>
+          <div class="footer-col">
+            <h4>지원</h4>
+            <a href="mailto:hello@bookengine.io">이메일 문의</a>
+            <a href="https://github.com/bookengine/bookengine/issues" target="_blank">GitHub Issues</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 BookEngine. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

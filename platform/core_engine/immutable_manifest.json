@@ -1,0 +1,125 @@
+{
+  "version": "1.0",
+  "policy": "immutable_core_engine",
+  "description": "검증 완료 후 임의 수정이 금지되는 Core Engine 파일 목록",
+  "immutable_files": [
+    {
+      "path": "platform/core_engine/CONSTITUTION.md",
+      "reason": "전역 헌법"
+    },
+    {
+      "path": "platform/core_engine/PROJECT_SOP.md",
+      "reason": "전역 프로젝트 SOP"
+    },
+    {
+      "path": "platform/core_engine/AGENT_SOPS.md",
+      "reason": "에이전트별 SOP"
+    },
+    {
+      "path": "platform/core_engine/ORCHESTRATION_SPEC.md",
+      "reason": "통합 오케스트레이션 명세"
+    },
+    {
+      "path": "platform/core_engine/CLEAN_ARCHITECTURE.md",
+      "reason": "Clean Architecture와 stage API 계층 명세"
+    },
+    {
+      "path": "platform/core_engine/API_SPEC.md",
+      "reason": "전역 API 명세"
+    },
+    {
+      "path": "platform/core_engine/CONTEXT_PACK_SPEC.md",
+      "reason": "전역/지역 컨텍스트 팩 계층 명세"
+    },
+    {
+      "path": "platform/core_engine/MODEL_ROUTING_POLICY.md",
+      "reason": "전역 모델 라우팅 정책 명세"
+    },
+    {
+      "path": "platform/core_engine/ANCHOR_SPEC.md",
+      "reason": "표준 앵커 주입 문법 및 의사결정 규약"
+    },
+    {
+      "path": "platform/core_engine/ANCHOR_PIPELINE.md",
+      "reason": "앵커 처리 파이프라인과 자동 시각화 규약"
+    },
+    {
+      "path": "platform/core_engine/api_catalog.yaml",
+      "reason": "전역 API 카탈로그"
+    },
+    {
+      "path": "platform/core_engine/anchor_type_catalog.json",
+      "reason": "전역 앵커 타입 카탈로그"
+    },
+    {
+      "path": "platform/core_engine/stage_definitions.json",
+      "reason": "표준 stage 계약"
+    },
+    {
+      "path": "platform/core_engine/gate_definitions.json",
+      "reason": "표준 gate 계약"
+    },
+    {
+      "path": "platform/core_engine/shared_memory_schema.json",
+      "reason": "공유 메모리 스키마"
+    },
+    {
+      "path": "platform/core_engine/work_order_schema.json",
+      "reason": "오케스트레이션 작업 지시 스키마"
+    },
+    {
+      "path": "platform/core_engine/word_target_schema.json",
+      "reason": "장별 목표 분량 스키마"
+    },
+    {
+      "path": "platform/core_engine/reference_index_schema.json",
+      "reason": "외부 참조 인덱스 스키마"
+    },
+    {
+      "path": "platform/core_engine/image_manifest_schema.json",
+      "reason": "이미지 매니페스트 스키마"
+    },
+    {
+      "path": "platform/core_engine/context_schemas/policy_pack_schema.json",
+      "reason": "전역 정책 팩 스키마"
+    },
+    {
+      "path": "platform/core_engine/context_schemas/book_context_digest_schema.json",
+      "reason": "책 단위 컨텍스트 digest 스키마"
+    },
+    {
+      "path": "platform/core_engine/context_schemas/chapter_context_pack_schema.json",
+      "reason": "장 단위 컨텍스트 팩 스키마"
+    },
+    {
+      "path": "platform/core_engine/context_schemas/node_context_pack_schema.json",
+      "reason": "노드 단위 컨텍스트 팩 스키마"
+    },
+    {
+      "path": "platform/core_engine/model_routing_policy.json",
+      "reason": "전역 모델 라우팅 정책"
+    },
+    {
+      "path": "platform/core_engine/immutable_manifest.json",
+      "reason": "불변 코어 선언 파일"
+    }
+  ],
+  "future_immutable_paths": [
+    "platform/core_engine/runtime/",
+    "platform/core_engine/contracts/",
+    "platform/core_engine/gateway/",
+    "platform/core_engine/validators/"
+  ],
+  "change_rule": {
+    "allowed_only_via": [
+      "version_bump",
+      "compatibility_review",
+      "core_engine_release_note"
+    ],
+    "forbidden": [
+      "agent_direct_edit",
+      "book_local_override",
+      "silent_schema_change"
+    ]
+  }
+}

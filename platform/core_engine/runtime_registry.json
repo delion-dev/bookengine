@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-03-18T11:47:05+09:00",
+  "books": {
+    "with_the_king": {
+      "book_id": "with_the_king",
+      "display_name": "with the King",
+      "book_root": "d:\\solar_book\\books\\with the King",
+      "status": "bootstrapped",
+      "last_session": "2026-03-18T11:47:05+09:00"
+    }
+  }
+}

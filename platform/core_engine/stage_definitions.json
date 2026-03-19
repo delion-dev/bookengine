@@ -1,0 +1,293 @@
+{
+  "version": "1.0",
+  "validation_target": {
+    "book_id": "with_the_king",
+    "book_root": "D:/solar_book/books/with the King"
+  },
+  "stages": [
+    {
+      "id": "S-1",
+      "name": "intake",
+      "agent": "AG-IN",
+      "input": [
+        "_inputs/proposal.md",
+        "_inputs/toc_seed.md"
+      ],
+      "output": [
+        "_inputs/intake_manifest.json"
+      ],
+      "gate": "input_contract_pass"
+    },
+    {
+      "id": "S0",
+      "name": "architecture",
+      "agent": "AG-AR",
+      "input": [
+        "_inputs/intake_manifest.json"
+      ],
+      "output": [
+        "_master/BOOK_CONFIG.json",
+        "_master/WORD_TARGETS.json",
+        "_master/ANCHOR_POLICY.json",
+        "_master/BOOK_BLUEPRINT.md",
+        "_master/STYLE_GUIDE.md",
+        "_master/QUALITY_CRITERIA.md"
+      ],
+      "gate": "blueprint_complete"
+    },
+    {
+      "id": "S1",
+      "name": "orchestration",
+      "agent": "AG-OM",
+      "input": [
+        "db/book_db.json",
+        "_master/BOOK_BLUEPRINT.md"
+      ],
+      "output": [
+        "db/WORK_ORDER.local.json",
+        "db/PIPELINE_STATUS.local.json"
+      ],
+      "gate": "work_order_issued"
+    },
+    {
+      "id": "S2",
+      "name": "research_plan",
+      "agent": "AG-RS",
+      "input": [
+        "_master/BOOK_CONFIG.json",
+        "_master/BOOK_BLUEPRINT.md",
+        "_master/WORD_TARGETS.json",
+        "_master/ANCHOR_POLICY.json",
+        "_inputs/proposal.md",
+        "_inputs/toc_seed.md"
+      ],
+      "output": [
+        "research/research_plan.json",
+        "research/source_queue.json",
+        "research/citations.json",
+        "research/reference_index.json",
+        "research/image_manifest.json",
+        "publication/appendix/REFERENCE_INDEX.md"
+      ],
+      "gate": "research_plan_complete"
+    },
+    {
+      "id": "S3",
+      "name": "raw_guides",
+      "agent": "AG-00",
+      "input": [
+        "_master/BOOK_CONFIG.json",
+        "_master/BOOK_BLUEPRINT.md",
+        "_master/WORD_TARGETS.json",
+        "_master/ANCHOR_POLICY.json",
+        "research/research_plan.json"
+      ],
+      "output": [
+        "manuscripts/_raw/{chapter_id}_raw.md",
+        "manuscripts/_raw/{chapter_id}_anchor_plan.json"
+      ],
+      "gate": "raw_guides_complete"
+    },
+    {
+      "id": "S4",
+      "name": "draft1_prose",
+      "agent": "AG-01",
+      "input": [
+        "manuscripts/_raw/{chapter_id}_raw.md",
+        "_master/WORD_TARGETS.json",
+        "research/source_queue.json"
+      ],
+      "output": [
+        "manuscripts/_draft1/{chapter_id}_draft1_prose.md",
+        "manuscripts/_draft1/{chapter_id}_node_manifest.json",
+        "manuscripts/_draft1/{chapter_id}_segment_plan.json",
+        "manuscripts/_draft1/{chapter_id}_narrative_design.json",
+        "manuscripts/_draft1/{chapter_id}_density_audit.json",
+        "manuscripts/_draft1/{chapter_id}_session_report.json"
+      ],
+      "gate": "draft1_complete"
+    },
+    {
+      "id": "S4A",
+      "name": "draft1_anchor_injected",
+      "agent": "AG-01B",
+      "input": [
+        "manuscripts/_draft1/{chapter_id}_draft1_prose.md",
+        "manuscripts/_raw/{chapter_id}_anchor_plan.json",
+        "_master/ANCHOR_POLICY.json"
+      ],
+      "output": [
+        "manuscripts/_draft1/{chapter_id}_draft1.md",
+        "manuscripts/_draft1/{chapter_id}_anchor_injection_report.json",
+        "manuscripts/_draft1/{chapter_id}_anchor_scope_report.json"
+      ],
+      "gate": "draft1_anchor_complete"
+    },
+    {
+      "id": "S5",
+      "name": "draft2_reviewed",
+      "agent": "AG-02",
+      "input": [
+        "manuscripts/_draft1/{chapter_id}_draft1.md",
+        "research/citations.json",
+        "research/reference_index.json",
+        "research/research_plan.json",
+        "research/image_manifest.json",
+        "_master/WORD_TARGETS.json",
+        "_master/STYLE_GUIDE.md"
+      ],
+      "output": [
+        "manuscripts/_draft2/{chapter_id}_draft2.md",
+        "manuscripts/_draft2/{chapter_id}_review_report.md",
+        "manuscripts/_draft2/{chapter_id}_rights_review.json",
+        "manuscripts/_draft2/{chapter_id}_review_nodes.json"
+      ],
+      "gate": "review_pass"
+    },
+    {
+      "id": "S6",
+      "name": "draft3_visual_plan",
+      "agent": "AG-03",
+      "input": [
+        "manuscripts/_draft2/{chapter_id}_draft2.md",
+        "manuscripts/_draft2/{chapter_id}_review_report.md",
+        "manuscripts/_draft2/{chapter_id}_rights_review.json",
+        "manuscripts/_raw/{chapter_id}_anchor_plan.json",
+        "_master/ANCHOR_POLICY.json",
+        "research/citations.json",
+        "research/image_manifest.json",
+        "research/reference_index.json"
+      ],
+      "output": [
+        "manuscripts/_draft3/{chapter_id}_draft3.md",
+        "manuscripts/_draft3/{chapter_id}_visual_plan.json",
+        "manuscripts/_draft3/{chapter_id}_visual_support.json"
+      ],
+      "gate": "visual_plan_complete"
+    },
+    {
+      "id": "S6A",
+      "name": "asset_collection_handoff",
+      "agent": "AG-AS",
+      "input": [
+        "manuscripts/_draft3/{chapter_id}_draft3.md",
+        "manuscripts/_draft3/{chapter_id}_visual_plan.json",
+        "manuscripts/_draft3/{chapter_id}_visual_support.json",
+        "research/reference_index.json",
+        "research/image_manifest.json"
+      ],
+      "output": [
+        "research/assets/{chapter_id}_asset_collection_manifest.json",
+        "publication/assets/cleared/{chapter_id}/ASSET_COLLECTION_{chapter_id}.md"
+      ],
+      "gate": "asset_collection_handoff_complete"
+    },
+    {
+      "id": "S6B",
+      "name": "image_asset_ingestion",
+      "agent": "AG-IM",
+      "input": [
+        "research/assets/{chapter_id}_asset_collection_manifest.json",
+        "research/image_manifest.json",
+        "manuscripts/_draft3/{chapter_id}_visual_plan.json",
+        "publication/assets/ingested/{chapter_id}/ext/",
+        "publication/assets/ingested/{chapter_id}/usr/",
+        "publication/assets/ingested/{chapter_id}/ai/"
+      ],
+      "output": [
+        "publication/assets/cleared/{chapter_id}/ASSET_{chapter_id}_*_v*.{ext}",
+        "publication/assets/cleared/{chapter_id}/{anchor_id}_provenance.json",
+        "research/assets/{chapter_id}_ingestion_report.json"
+      ],
+      "gate": "image_asset_ingestion_pass",
+      "note": "ext/usr/ai 소스 이미지를 수집·검증·등록. eng 타입(구조화 렌더)은 S7에서 처리. spec: platform/core_engine/IMAGE_ASSET_SPEC.md"
+    },
+    {
+      "id": "S7",
+      "name": "draft4_visual_rendered",
+      "agent": "AG-04",
+      "input": [
+        "manuscripts/_draft3/{chapter_id}_draft3.md",
+        "manuscripts/_draft3/{chapter_id}_visual_plan.json",
+        "manuscripts/_draft3/{chapter_id}_visual_support.json",
+        "research/assets/{chapter_id}_asset_collection_manifest.json",
+        "publication/assets/cleared/{chapter_id}/"
+      ],
+      "output": [
+        "manuscripts/_draft4/{chapter_id}_draft4.md",
+        "manuscripts/_draft4/{chapter_id}_visual_bundle.json"
+      ],
+      "gate": "visual_render_pass"
+    },
+    {
+      "id": "S8",
+      "name": "draft5_copyedited",
+      "agent": "AG-05",
+      "input": [
+        "manuscripts/_draft4/{chapter_id}_draft4.md",
+        "_master/STYLE_GUIDE.md",
+        "_master/QUALITY_CRITERIA.md"
+      ],
+      "output": [
+        "manuscripts/_draft5/{chapter_id}_draft5.md",
+        "manuscripts/_draft5/{chapter_id}_proofreading_report.md"
+      ],
+      "gate": "copyedit_gate_pass"
+    },
+    {
+      "id": "S8A",
+      "name": "draft6_optional_editorial_polish",
+      "agent": "AG-05A",
+      "input": [
+        "manuscripts/_draft5/{chapter_id}_draft5.md",
+        "_master/STYLE_GUIDE.md",
+        "_master/QUALITY_CRITERIA.md",
+        "_master/BOOK_BLUEPRINT.md"
+      ],
+      "output": [
+        "manuscripts/_draft6/{chapter_id}_draft6.md",
+        "manuscripts/_draft6/{chapter_id}_amplification_report.md",
+        "manuscripts/_draft6/{chapter_id}_amplification_nodes.json"
+      ],
+      "gate": "amplification_pass"
+    },
+    {
+      "id": "SQA",
+      "name": "publication_qa",
+      "agent": "AG-QA",
+      "input": [
+        "manuscripts/_draft5",
+        "manuscripts/_draft6",
+        "research/image_manifest.json",
+        "research/reference_index.json",
+        "db/book_db.json",
+        "_master/WORD_TARGETS.json"
+      ],
+      "output": [
+        "publication/qa/publication_clearance_report.json",
+        "publication/qa/qa_report.md"
+      ],
+      "gate": "publication_clearance",
+      "note": "Pre-publication QA: manuscript completeness, word counts, asset clearance, reference integrity"
+    },
+    {
+      "id": "S9",
+      "name": "publication",
+      "agent": "AG-06",
+      "input": [
+        "manuscripts/_draft5",
+        "_master/BOOK_CONFIG.json",
+        "db/book_db.json"
+      ],
+      "output": [
+        "publication/output/{book_id}.epub",
+        "publication/output/{book_id}.pdf",
+        "publication/output/{book_id}_frontcover.png",
+        "publication/output/publication_manifest.json",
+        "publication/output/seo_metadata.json",
+        "publication/output/store_listing.md"
+      ],
+      "gate": "publication_pass"
+    }
+  ]
+}

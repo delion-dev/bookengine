@@ -166,10 +166,21 @@ def save_book_metadata(book_id: str, data: dict[str, Any]) -> dict[str, Any]:
         else:
             meta["isbn13"] = format_isbn13(meta["isbn13"])
 
-    # Set identifier (prefer ISBN, fallback to Google ID, else UUID)
-    if meta["isbn13"] and not errors:
+    # Google Books Partner ID validation (영숫자 8~20자)
+    if meta.get("google_books_id"):
+        gid = meta["google_books_id"].strip()
+        if not re.fullmatch(r"[A-Za-z0-9_\-]{6,30}", gid):
+            errors.append(
+                f"Google Books ID 형식 오류: '{gid}' — "
+                "영숫자/하이픈/언더스코어 6~30자 (Partner Center에서 확인)"
+            )
+        else:
+            meta["google_books_id"] = gid
+
+    # Set identifier (prefer ISBN > Google ID > UUID)
+    if meta["isbn13"] and not any("ISBN-13" in e for e in errors):
         meta["identifier"] = f"isbn:{re.sub(r'[-]', '', meta['isbn13'])}"
-    elif meta["google_books_id"]:
+    elif meta.get("google_books_id") and not any("Google Books" in e for e in errors):
         meta["identifier"] = f"google:{meta['google_books_id']}"
     elif not meta["identifier"]:
         meta["identifier"] = f"urn:uuid:{uuid.uuid4()}"

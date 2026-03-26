@@ -52,7 +52,9 @@ function NavItem({ href, icon, label, indent = false }: NavItemProps) {
 
 export function Sidebar() {
   const { data: books } = useSWR("books-list", () => registry.listBooks(), {
-    refreshInterval: 10000,
+    refreshInterval: 30000,       // 10s → 30s (서버 부하 완화)
+    revalidateOnFocus: true,      // 탭 포커스 시 즉시 갱신
+    revalidateOnReconnect: true,
   });
   const [expandedBook, setExpandedBook] = useState<string | null>(
     books?.books?.[0]?.book_id ?? null

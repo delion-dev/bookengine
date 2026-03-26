@@ -3,18 +3,22 @@ from __future__ import annotations
 """engine.publish — Google Books Publication Pipeline Endpoints
 
 Endpoints:
-  GET  /engine/publish/style-guides              — style guide catalog
-  GET  /engine/publish/style-guide/{book_id}     — current book style guide
-  POST /engine/publish/style-guide/{book_id}     — save style guide selection
-  GET  /engine/publish/metadata/{book_id}        — EPUB metadata (with preview)
-  PUT  /engine/publish/metadata/{book_id}        — save metadata
-  POST /engine/publish/keywords/generate/{book_id} — AI keyword generation
-  GET  /engine/publish/keywords/{book_id}        — current keywords
-  PUT  /engine/publish/keywords/{book_id}        — save keywords manually
-  POST /engine/publish/export/{book_id}          — build final EPUB
-  GET  /engine/publish/export/{book_id}/status   — last export result
+  GET  /engine/publish/style-guides                  — style guide catalog
+  GET  /engine/publish/style-guide/{book_id}         — current book style guide
+  POST /engine/publish/style-guide/{book_id}         — save style guide selection
+  GET  /engine/publish/metadata/{book_id}            — EPUB metadata (with preview)
+  PUT  /engine/publish/metadata/{book_id}            — save metadata
+  POST /engine/publish/keywords/generate/{book_id}   — AI keyword generation
+  GET  /engine/publish/keywords/{book_id}            — current keywords
+  PUT  /engine/publish/keywords/{book_id}            — save keywords manually
+  POST /engine/publish/export/{book_id}              — build final EPUB (async)
+  GET  /engine/publish/export/{book_id}/status       — export job status
+  GET  /engine/publish/export/{book_id}/download     — download EPUB
 """
 
+import threading
+import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +29,40 @@ from pydantic import BaseModel
 from engine_api.deps import resolve_book_root
 
 router = APIRouter(prefix="/engine/publish", tags=["publish"])
+
+# ---------------------------------------------------------------------------
+# Export Job Store (in-memory)
+# ---------------------------------------------------------------------------
+_export_jobs: dict[str, dict[str, Any]] = {}
+_export_lock = threading.Lock()
+
+
+def _run_export(job_id: str, book_id: str, book_root: Path) -> None:
+    with _export_lock:
+        _export_jobs[job_id]["status"] = "running"
+        _export_jobs[job_id]["started_at"] = datetime.now().isoformat(timespec="seconds")
+    try:
+        from engine_core.epub_packager import pack_epub
+        from engine_core.style_guide import run_style_guide_stage
+
+        css_path = book_root / "publication" / "epub" / "OEBPS" / "css" / "style.css"
+        if not css_path.exists():
+            run_style_guide_stage(book_id, book_root)
+
+        result = pack_epub(book_id, book_root)
+        with _export_lock:
+            _export_jobs[job_id].update({
+                "status": "completed",
+                "result": result,
+                "completed_at": datetime.now().isoformat(timespec="seconds"),
+            })
+    except Exception as exc:
+        with _export_lock:
+            _export_jobs[job_id].update({
+                "status": "failed",
+                "error": str(exc),
+                "completed_at": datetime.now().isoformat(timespec="seconds"),
+            })
 
 
 # ---------------------------------------------------------------------------
@@ -164,37 +202,50 @@ def update_keywords(book_id: str, req: KeywordsRequest):
 # ---------------------------------------------------------------------------
 
 @router.post("/export/{book_id}")
-def export_epub(book_id: str):
-    """Build final EPUB 3.x from publication artifacts."""
-    from engine_core.epub_packager import pack_epub
-    from engine_core.style_guide import run_style_guide_stage
-
+def export_epub(book_id: str, background_tasks: BackgroundTasks):
+    """Submit EPUB build job (async). Returns job_id immediately.
+    Poll GET /export/{book_id}/status for progress."""
     book_root = resolve_book_root(book_id)
 
-    # Ensure style guide CSS exists (run S10 if needed)
-    css_path = book_root / "publication" / "epub" / "OEBPS" / "css" / "style.css"
-    if not css_path.exists():
-        run_style_guide_stage(book_id, book_root)
+    job_id = f"epub-{uuid.uuid4().hex[:12]}"
+    job: dict[str, Any] = {
+        "job_id": job_id,
+        "book_id": book_id,
+        "status": "queued",
+        "result": None,
+        "error": None,
+        "started_at": None,
+        "completed_at": None,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    with _export_lock:
+        _export_jobs[job_id] = job
 
-    try:
-        result = pack_epub(book_id, book_root)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"EPUB 생성 실패: {e}")
-
-    return result
+    background_tasks.add_task(_run_export, job_id, book_id, book_root)
+    return {"job_id": job_id, "status": "queued",
+            "poll_url": f"/engine/publish/export/{book_id}/status"}
 
 
 @router.get("/export/{book_id}/status")
 def export_status(book_id: str):
-    """Return last EPUB export result."""
-    book_root = resolve_book_root(book_id)
-    result_path = book_root / "publication" / "epub_export" / "result.json"
+    """Return latest EPUB export job status."""
+    resolve_book_root(book_id)
 
-    if not result_path.exists():
+    # Find most recent job for this book
+    with _export_lock:
+        jobs = [j for j in _export_jobs.values() if j["book_id"] == book_id]
+
+    if not jobs:
+        # Fallback: check persisted result file
+        book_root = resolve_book_root(book_id)
+        result_path = book_root / "publication" / "epub_export" / "result.json"
+        if result_path.exists():
+            from engine_core.common import read_json
+            return {"status": "completed", **read_json(result_path)}
         return {"status": "not_exported", "epub_path": None}
 
-    from engine_core.common import read_json
-    return read_json(result_path)
+    latest = sorted(jobs, key=lambda j: j["created_at"], reverse=True)[0]
+    return latest
 
 
 @router.get("/export/{book_id}/download")

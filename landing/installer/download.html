@@ -78,8 +78,9 @@
         <div class="dl-platform">Windows (NSIS 설치 마법사)</div>
         <div class="dl-version">v0.1.0-beta</div>
         <div class="dl-size">~15 MB</div>
-        <a href="#" class="btn-download disabled">
-          ↓ 준비 중
+        <a href="https://github.com/delion-dev/bookengine/releases/download/v0.1.0-beta/BookEngine_0.1.0_x64-setup.exe"
+           class="btn-download" id="btn-nsis">
+          ↓ .exe 다운로드
         </a>
       </div>
       <div class="download-card">
@@ -88,8 +89,9 @@
         <div class="dl-platform">Windows (MSI)</div>
         <div class="dl-version">v0.1.0-beta</div>
         <div class="dl-size">~12 MB</div>
-        <a href="#" class="btn-download disabled">
-          ↓ 준비 중
+        <a href="https://github.com/delion-dev/bookengine/releases/download/v0.1.0-beta/BookEngine_0.1.0_x64_en-US.msi"
+           class="btn-download disabled" id="btn-msi">
+          ↓ .msi 다운로드
         </a>
       </div>
       <div class="download-card">
@@ -186,5 +188,21 @@
   </footer>
 
   <script src="../assets/js/main.js"></script>
+  <script>
+    // Gracefully disable download buttons when the release asset is not yet published.
+    (function() {
+      const RELEASE_API = "https://api.github.com/repos/delion-dev/bookengine/releases/tags/v0.1.0-beta";
+      fetch(RELEASE_API, { headers: { Accept: "application/vnd.github+json" } })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data) {
+            // Release not yet published — revert active button to disabled state
+            var btn = document.getElementById("btn-nsis");
+            if (btn) { btn.classList.add("disabled"); btn.textContent = "↓ 준비 중"; btn.removeAttribute("href"); }
+          }
+        })
+        .catch(function() {});
+    })();
+  </script>
 </body>
 </html>

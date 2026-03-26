@@ -23,8 +23,10 @@ def _base_target(part: str, chapter_id: str) -> int:
         return int(base_targets.get("intro", 2200))
     if chapter_id == "outro":
         return int(base_targets.get("outro", 1800))
-    for part_key in ("CINEMA", "HISTORY", "TRAVEL", "TASTE"):
-        if part_key in part and part_key in base_targets:
+    # Dynamic: try all part keys defined in config (longest key wins to avoid prefix collisions)
+    reserved = {"intro", "outro", "default"}
+    for part_key in sorted((k for k in base_targets if k not in reserved), key=len, reverse=True):
+        if part_key in part:
             return int(base_targets[part_key])
     return int(base_targets.get("default", 1800))
 
@@ -68,6 +70,20 @@ def _adjustments(chapter: dict[str, Any]) -> tuple[int, list[str]]:
     return delta, rationale
 
 
+def _resolve_budget_cfg(budget_cfg: Any, target_words: int, title: str, default_budget: int) -> int:
+    """Resolve a budget entry that may be an int or a dict with threshold/hot_issue logic."""
+    if not isinstance(budget_cfg, dict):
+        return int(budget_cfg)
+    is_hot = "[HOT ISSUE]" in title
+    hot_budget = int(budget_cfg.get("hot_issue", budget_cfg.get("default", default_budget)))
+    if is_hot:
+        return hot_budget
+    high_threshold = budget_cfg.get("high_word_threshold")
+    if high_threshold is not None and target_words >= int(high_threshold):
+        return int(budget_cfg.get("high_word_budget", hot_budget))
+    return int(budget_cfg.get("default", default_budget))
+
+
 def _anchor_budget(part: str, chapter_id: str, target_words: int, chapter: dict[str, Any]) -> int:
     cfg = _load_word_target_policy()
     budgets: dict[str, Any] = cfg.get("anchor_budgets", {})
@@ -76,33 +92,11 @@ def _anchor_budget(part: str, chapter_id: str, target_words: int, chapter: dict[
     if chapter_id in {"intro", "outro"}:
         return int(budgets.get(chapter_id, default_budget))
 
-    if "TRAVEL" in part:
-        return int(budgets.get("TRAVEL", 3))
-
-    if "TASTE" in part:
-        taste_cfg = budgets.get("TASTE", {})
-        if isinstance(taste_cfg, dict):
-            threshold = int(taste_cfg.get("high_word_threshold", 2000))
-            high_budget = int(taste_cfg.get("high_word_budget", 3))
-            return high_budget if target_words >= threshold else int(taste_cfg.get("default", default_budget))
-        return int(taste_cfg)
-
-    if "HISTORY" in part:
-        hist_cfg = budgets.get("HISTORY", {})
-        if isinstance(hist_cfg, dict):
-            hot_budget = int(hist_cfg.get("hot_issue", 3))
-            threshold = int(hist_cfg.get("high_word_threshold", 2700))
-            if "[HOT ISSUE]" in chapter["title"] or target_words >= threshold:
-                return hot_budget
-            return int(hist_cfg.get("default", default_budget))
-        return int(hist_cfg)
-
-    if "CINEMA" in part:
-        cinema_cfg = budgets.get("CINEMA", {})
-        if isinstance(cinema_cfg, dict):
-            hot_budget = int(cinema_cfg.get("hot_issue", 3))
-            return hot_budget if "[HOT ISSUE]" in chapter["title"] else int(cinema_cfg.get("default", default_budget))
-        return int(cinema_cfg)
+    # Dynamic: try all part keys defined in config (longest key wins)
+    reserved = {"intro", "outro", "default"}
+    for part_key in sorted((k for k in budgets if k not in reserved), key=len, reverse=True):
+        if part_key in part:
+            return _resolve_budget_cfg(budgets[part_key], target_words, chapter["title"], default_budget)
 
     return default_budget
 

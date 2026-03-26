@@ -326,6 +326,14 @@
     "CINEMA_HOT_ISSUE": ["TL", "BT", "CO"],
     "HISTORY":  ["TL", "RM", "FN"],
     "TRAVEL":   ["EP", "PF", "CO"],
-    "TASTE":    ["EP", "BT", "SB"]
+    "TASTE":    ["EP", "BT", "SB"],
+    "SDLC":     ["PF", "BT", "TL"],
+    "SDLC_HOT_ISSUE": ["TL", "BT", "DS"],
+    "METAGPT":  ["HN", "RM", "BT"],
+    "METAGPT_HOT_ISSUE": ["RM", "PF", "BT"],
+    "CLAUDECODE": ["SB", "CO", "BT"],
+    "CLAUDECODE_HOT_ISSUE": ["BT", "SB", "DS"],
+    "CASESTUDY": ["TL", "BT", "DS"],
+    "CASESTUDY_HOT_ISSUE": ["TL", "DS", "RM"]
   }
 }

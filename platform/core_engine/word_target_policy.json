@@ -3,13 +3,17 @@
   "description": "Word-count targets, adjustment deltas, anchor budgets, and stage progress floors. Single source of truth consumed by targets.py. Modify here to retune per-book chapter length policy without touching code.",
 
   "base_targets": {
-    "intro":   2200,
-    "outro":   1800,
-    "CINEMA":  2400,
-    "HISTORY": 2500,
-    "TRAVEL":  2100,
-    "TASTE":   1900,
-    "default": 1800
+    "intro":      2200,
+    "outro":      1800,
+    "CINEMA":     2400,
+    "HISTORY":    2500,
+    "TRAVEL":     2100,
+    "TASTE":      1900,
+    "SDLC":       2600,
+    "METAGPT":    2500,
+    "CLAUDECODE": 2400,
+    "CASESTUDY":  2800,
+    "default":    1800
   },
 
   "adjustments": {
@@ -29,13 +33,17 @@
   },
 
   "anchor_budgets": {
-    "intro":   2,
-    "outro":   2,
-    "TRAVEL":  3,
-    "HISTORY": { "default": 2, "hot_issue": 3, "high_word_threshold": 2700 },
-    "CINEMA":  { "default": 2, "hot_issue": 3 },
-    "TASTE":   { "default": 2, "high_word_threshold": 2000, "high_word_budget": 3 },
-    "default": 2
+    "intro":      2,
+    "outro":      2,
+    "TRAVEL":     3,
+    "HISTORY":    { "default": 2, "hot_issue": 3, "high_word_threshold": 2700 },
+    "CINEMA":     { "default": 2, "hot_issue": 3 },
+    "TASTE":      { "default": 2, "high_word_threshold": 2000, "high_word_budget": 3 },
+    "SDLC":       { "default": 2, "hot_issue": 3 },
+    "METAGPT":    { "default": 2, "hot_issue": 3 },
+    "CLAUDECODE": { "default": 2, "hot_issue": 3 },
+    "CASESTUDY":  { "default": 3, "hot_issue": 3, "high_word_threshold": 2600, "high_word_budget": 4 },
+    "default":    2
   },
 
   "stage_progress_floors": {

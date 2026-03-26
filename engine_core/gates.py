@@ -5,14 +5,27 @@ from typing import Any
 
 from .anchor_scope import anchor_scope_integrity, strip_anchor_blocks
 from .contracts import get_stage_definition, resolve_stage_contract
-from .common import GATE_DEFINITIONS_PATH, count_words, read_json
+from .common import GATE_DEFINITIONS_PATH, PLATFORM_CORE_ROOT, count_words, read_json
 from .manuscript_integrity import READER_FACING_INTERNAL_HEADINGS, find_body_meta_markers, find_meta_block_residue
 from .section_labels import SECTION_ORDER, find_section_marker, required_section_markers
+from .subsection_nodes import STAGE_NODE_DIRS
 
 
-MAX_GATE_S4_EXPANSIONS = 3
-MAX_GATE_S8A_REWRITE_TARGETS = 10
-MAX_GATE_AMPLIFICATION_RATIO = 2.0
+def _gate_execution_limits() -> dict:
+    payload = read_json(PLATFORM_CORE_ROOT / "stage_execution_policies.json", default={}) or {}
+    stages = payload.get("stages", {})
+    s4_lim = stages.get("S4", {}).get("execution_limits", {})
+    s8a_lim = stages.get("S8A", {}).get("execution_limits", {})
+    return {
+        "max_s4_expansions": int(s4_lim.get("max_expansions", 3)),
+        "max_s8a_rewrite_targets": int(s8a_lim.get("max_rewrite_targets", 10)),
+        "max_amplification_ratio": float(s8a_lim.get("max_amplification_ratio", 2.0)),
+    }
+
+_GATE_LIMITS = _gate_execution_limits()
+MAX_GATE_S4_EXPANSIONS: int = _GATE_LIMITS["max_s4_expansions"]
+MAX_GATE_S8A_REWRITE_TARGETS: int = _GATE_LIMITS["max_s8a_rewrite_targets"]
+MAX_GATE_AMPLIFICATION_RATIO: float = _GATE_LIMITS["max_amplification_ratio"]
 S6_FORBIDDEN_DRAFT3_HEADINGS = set(READER_FACING_INTERNAL_HEADINGS)
 REQUIRED_SECTIONS = required_section_markers()
 
@@ -80,16 +93,21 @@ def _draft_path(book_root: Path, draft_folder: str, chapter_id: str | None) -> P
     return book_root / "manuscripts" / draft_folder / f"{chapter_id}_{draft_folder[1:]}.md"
 
 
+_NODE_MANIFEST_FILENAMES: dict[str, str] = {
+    "S4":  "{chapter_id}_node_manifest.json",
+    "S5":  "{chapter_id}_review_nodes.json",
+    "S8A": "{chapter_id}_amplification_nodes.json",
+}
+
+
 def _node_manifest_path(book_root: Path, stage_id: str, chapter_id: str | None) -> Path:
     if not chapter_id:
         raise ValueError("chapter_id is required to resolve node manifest paths")
-    if stage_id == "S4":
-        return book_root / "manuscripts" / "_draft1" / f"{chapter_id}_node_manifest.json"
-    if stage_id == "S5":
-        return book_root / "manuscripts" / "_draft2" / f"{chapter_id}_review_nodes.json"
-    if stage_id == "S8A":
-        return book_root / "manuscripts" / "_draft6" / f"{chapter_id}_amplification_nodes.json"
-    raise KeyError(f"No node manifest path rule for stage_id={stage_id}")
+    if stage_id not in STAGE_NODE_DIRS or stage_id not in _NODE_MANIFEST_FILENAMES:
+        raise KeyError(f"No node manifest path rule for stage_id={stage_id}")
+    folder_parts = STAGE_NODE_DIRS[stage_id]
+    filename = _NODE_MANIFEST_FILENAMES[stage_id].format(chapter_id=chapter_id)
+    return book_root.joinpath(*folder_parts) / filename
 
 
 def _run_check(

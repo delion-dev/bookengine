@@ -119,6 +119,16 @@
         "network_recovery_passes": 1,
         "network_recovery_cooldown_seconds": 20
       },
+      "section_budget": {
+        "hook_ratio": 0.17,
+        "context_ratio": 0.23,
+        "insight_ratio": 0.42,
+        "hook_min_words": 220,
+        "context_min_words": 360,
+        "insight_min_words": 820,
+        "takeaway_min_words": 260,
+        "live_success_ratio_floor": 0.25
+      },
       "global_characteristics": [
         "Preserve chapter structure and anchor obligations.",
         "Prefer distilled policy context over raw master documents.",
@@ -273,7 +283,10 @@
       "execution_limits": {
         "max_expansions": 2,
         "network_recovery_passes": 1,
-        "network_recovery_cooldown_seconds": 20
+        "network_recovery_cooldown_seconds": 20,
+        "max_rewrite_targets": 10,
+        "max_amplification_ratio": 2.0,
+        "min_retention_ratio": 0.85
       },
       "global_characteristics": [
         "Preserve facts, names, chronology, and caveats.",

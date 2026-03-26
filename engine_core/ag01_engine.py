@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .common import count_words, now_iso, write_json, write_text
+from .common import PLATFORM_CORE_ROOT, count_words, now_iso, read_json, write_json, write_text
 from .context_packs import build_context_bundle
 from .model_gateway import ModelGatewayError, diagnose_vertex_live_probe, generate_text, grounded_research
 from .model_policy import resolve_stage_route
@@ -62,9 +62,21 @@ SECTION_TONE_GUARDRAILS = {
     "insight": "과장된 단언을 피하고 근거 수준에 맞는 어조를 유지한다.",
     "takeaway": "훈계조로 끝내지 말고 독자에게 쓸모 있는 시선이나 행동으로 닫는다.",
 }
-MAX_NETWORK_RECOVERY_PASSES = 1
-NETWORK_RECOVERY_COOLDOWN_SECONDS = 6
-S4_EXPANSION_CAP = 3
+def _s4_limits() -> dict:
+    payload = read_json(PLATFORM_CORE_ROOT / "stage_execution_policies.json", default={}) or {}
+    s4 = payload.get("stages", {}).get("S4", {})
+    lim = s4.get("execution_limits") or payload.get("default_execution_limits") or {}
+    return {
+        "max_expansions": int(lim.get("max_expansions", 3)),
+        "network_recovery_passes": int(lim.get("network_recovery_passes", 1)),
+        "network_recovery_cooldown_seconds": int(lim.get("network_recovery_cooldown_seconds", 20)),
+        **{k: v for k, v in s4.get("section_budget", {}).items()},
+    }
+
+_S4_LIMITS = _s4_limits()
+MAX_NETWORK_RECOVERY_PASSES: int = _S4_LIMITS["network_recovery_passes"]
+NETWORK_RECOVERY_COOLDOWN_SECONDS: int = _S4_LIMITS["network_recovery_cooldown_seconds"]
+S4_EXPANSION_CAP: int = _S4_LIMITS["max_expansions"]
 META_GUIDANCE_FRAGMENTS = (
     "책 쓰는 법",
     "이 장을 어떻게 써야",
@@ -400,14 +412,15 @@ def _grounded_brief_for_writer(
 
 
 def section_word_budget(chapter_target: dict[str, Any]) -> dict[str, int]:
+    sb = _S4_LIMITS  # section_budget fields merged at module load
     desired_total = max(
         chapter_target["stage_progress_floors"]["S4_draft1_min_words"],
         int(chapter_target["target_words"] * 0.9),
     )
-    hook = max(220, int(desired_total * 0.17))
-    context = max(360, int(desired_total * 0.23))
-    insight = max(820, int(desired_total * 0.42))
-    takeaway = max(260, desired_total - hook - context - insight)
+    hook = max(int(sb.get("hook_min_words", 220)), int(desired_total * float(sb.get("hook_ratio", 0.17))))
+    context = max(int(sb.get("context_min_words", 360)), int(desired_total * float(sb.get("context_ratio", 0.23))))
+    insight = max(int(sb.get("insight_min_words", 820)), int(desired_total * float(sb.get("insight_ratio", 0.42))))
+    takeaway = max(int(sb.get("takeaway_min_words", 260)), desired_total - hook - context - insight)
     return {
         "desired_total": desired_total,
         "hook": hook,

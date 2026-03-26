@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from functools import lru_cache
+
 from .book_state import load_book_db
-from .common import read_text, write_text
+from .common import PLATFORM_CORE_ROOT, read_json, read_text, write_text
 from .contracts import validate_inputs
 from .gates import evaluate_gate
 from .manuscript_integrity import find_body_meta_markers, find_internal_heading_residue, sanitize_reader_manuscript
@@ -15,14 +17,26 @@ from .stage import transition_stage
 from .work_order import issue_work_order
 
 REQUIRED_SECTIONS = required_section_markers()
-STYLE_RED_FLAGS = ["무조건", "절대", "완벽한", "최고의", "엄청난"]
-STYLE_REPLACEMENTS = {
-    "무조건": "가급적",
-    "절대": "쉽게",
-    "완벽한": "탄탄한",
-    "최고의": "인상적인",
-    "엄청난": "큰",
-}
+
+
+@lru_cache(maxsize=1)
+def _load_style_rules() -> dict:
+    """Load style red-flags and replacements from style_rules.json. Cached."""
+    return read_json(PLATFORM_CORE_ROOT / "style_rules.json", default={}) or {}
+
+
+def _style_red_flags() -> list[str]:
+    return list(_load_style_rules().get("red_flags", ["무조건", "절대", "완벽한", "최고의", "엄청난"]))
+
+
+def _style_replacements() -> dict[str, str]:
+    return dict(_load_style_rules().get("replacements", {
+        "무조건": "가급적", "절대": "쉽게", "완벽한": "탄탄한", "최고의": "인상적인", "엄청난": "큰",
+    }))
+
+
+STYLE_RED_FLAGS: list[str] = _style_red_flags()
+STYLE_REPLACEMENTS: dict[str, str] = _style_replacements()
 
 
 def _pending_s8_chapters(book_root: Path) -> list[str]:

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .book_state import load_book_db
-from .common import count_words, now_iso, read_text, write_text
+from .common import PLATFORM_CORE_ROOT, count_words, now_iso, read_json, read_text, write_text
 from .contracts import resolve_stage_contract, validate_inputs
 from .context_packs import build_context_bundle
 from .gates import evaluate_gate
@@ -44,10 +44,24 @@ SENSORY_TERMS = {
     "TRAVEL": ("골목", "바람", "물결", "해질녘", "빛", "걸음", "풍경", "현장"),
     "TASTE": ("한입", "국물", "향", "식감", "잔", "온기", "입안", "테이블"),
 }
-MAX_S8A_REWRITE_TARGETS = 10
-MAX_AMPLIFICATION_RATIO = 2.0
-MAX_NETWORK_RECOVERY_PASSES = 1
-NETWORK_RECOVERY_COOLDOWN_SECONDS = 20
+def _s8a_limits() -> dict:
+    payload = read_json(PLATFORM_CORE_ROOT / "stage_execution_policies.json", default={}) or {}
+    s8a = payload.get("stages", {}).get("S8A", {})
+    lim = s8a.get("execution_limits") or payload.get("default_execution_limits") or {}
+    return {
+        "max_rewrite_targets": int(lim.get("max_rewrite_targets", 10)),
+        "max_amplification_ratio": float(lim.get("max_amplification_ratio", 2.0)),
+        "min_retention_ratio": float(lim.get("min_retention_ratio", 0.85)),
+        "network_recovery_passes": int(lim.get("network_recovery_passes", 1)),
+        "network_recovery_cooldown_seconds": int(lim.get("network_recovery_cooldown_seconds", 20)),
+    }
+
+_S8A_LIMITS = _s8a_limits()
+MAX_S8A_REWRITE_TARGETS: int = _S8A_LIMITS["max_rewrite_targets"]
+MAX_AMPLIFICATION_RATIO: float = _S8A_LIMITS["max_amplification_ratio"]
+_MIN_RETENTION_RATIO: float = _S8A_LIMITS["min_retention_ratio"]
+MAX_NETWORK_RECOVERY_PASSES: int = _S8A_LIMITS["network_recovery_passes"]
+NETWORK_RECOVERY_COOLDOWN_SECONDS: int = _S8A_LIMITS["network_recovery_cooldown_seconds"]
 
 
 def _amplification_checkpoint_path(book_root: Path, chapter_id: str) -> Path:
@@ -941,7 +955,7 @@ def _render_amplification_report(
     selected_sections = live_detail.get("selected_sections", [])
     section_coverage_balanced = live_detail.get("section_coverage_balanced", True)
     return_stage = None
-    if not structure["passed"] or retention_ratio < 0.85:
+    if not structure["passed"] or retention_ratio < _MIN_RETENTION_RATIO:
         return_stage = "S8"
     elif ratio_exceeded:
         return_stage = "S8A"

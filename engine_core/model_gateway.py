@@ -11,13 +11,46 @@ from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
 
-from .common import REPO_ROOT, append_jsonl, ensure_dir, now_iso, read_json, write_json
+from functools import lru_cache
+
+from .common import PLATFORM_CORE_ROOT, REPO_ROOT, append_jsonl, ensure_dir, now_iso, read_json, write_json
 
 
 ENV_PATH = REPO_ROOT / ".env"
-_DEFAULT_API_VERSION = "v1"
-_DEFAULT_GEMINI_API_VERSION = "v1beta"
-_DEFAULT_TIMEOUT_SECONDS = 90
+
+
+@lru_cache(maxsize=1)
+def _load_model_config() -> dict:
+    """Load model defaults from model_config.json. Cached for process lifetime."""
+    payload = read_json(PLATFORM_CORE_ROOT / "model_config.json", default={}) or {}
+    return payload
+
+
+def _model_defaults() -> dict:
+    cfg = _load_model_config()
+    gw = cfg.get("gateway_defaults", {})
+    mdl = cfg.get("default_models", {})
+    return {
+        "text_model":              mdl.get("text_model", "gemini-2.5-pro"),
+        "structured_model":        mdl.get("structured_model", "gemini-2.5-pro"),
+        "research_model":          mdl.get("research_model", "gemini-2.5-pro"),
+        "safety_model":            mdl.get("safety_model", "gemini-2.5-flash"),
+        "fast_model":              mdl.get("fast_model", "gemini-2.5-flash"),
+        "timeout_seconds":         int(gw.get("timeout_seconds", 90)),
+        "request_min_interval_ms": int(gw.get("request_min_interval_ms", 2000)),
+        "request_jitter_ms":       int(gw.get("request_jitter_ms", 0)),
+        "max_retries":             int(gw.get("max_retries", 2)),
+        "retry_backoff_seconds":   float(gw.get("retry_backoff_seconds", 6.0)),
+        "api_version":             str(gw.get("api_version", "v1")),
+        "gemini_api_version":      str(gw.get("gemini_api_version", "v1beta")),
+    }
+
+
+# Module-level constants resolved once at import (overridable via env)
+_MD = _model_defaults()
+_DEFAULT_API_VERSION: str         = _MD["api_version"]
+_DEFAULT_GEMINI_API_VERSION: str  = _MD["gemini_api_version"]
+_DEFAULT_TIMEOUT_SECONDS: int     = _MD["timeout_seconds"]
 
 
 class ModelGatewayError(RuntimeError):
@@ -222,16 +255,16 @@ def load_model_gateway_config() -> ModelGatewayConfig:
         api_key=api_key,
         access_token=_first(env, "VERTEX_ACCESS_TOKEN", "GOOGLE_OAUTH_ACCESS_TOKEN"),
         enable_live_calls=_as_bool(_first(env, "VERTEX_ENABLE_LIVE_CALLS"), default=False),
-        timeout_seconds=_as_int(_first(env, "VERTEX_TIMEOUT_SECONDS"), _DEFAULT_TIMEOUT_SECONDS),
-        request_min_interval_ms=_as_int(_first(env, "VERTEX_REQUEST_MIN_INTERVAL_MS"), 2000),
-        request_jitter_ms=_as_int(_first(env, "VERTEX_REQUEST_JITTER_MS"), 0),
-        max_retries=_as_int(_first(env, "VERTEX_MAX_RETRIES"), 2),
-        retry_backoff_seconds=float(_first(env, "VERTEX_RETRY_BACKOFF_SECONDS", default="6") or "6"),
-        text_model=(_first(env, "VERTEX_MODEL_TEXT", "GEMINI_CONTENT_MODEL", default="gemini-2.5-pro") or "gemini-2.5-pro").strip(),
-        structured_model=(_first(env, "VERTEX_MODEL_STRUCTURED", "GEMINI_CONTENT_MODEL", default="gemini-2.5-pro") or "gemini-2.5-pro").strip(),
-        research_model=(_first(env, "VERTEX_MODEL_RESEARCH", "GEMINI_CONTENT_MODEL", default="gemini-2.5-pro") or "gemini-2.5-pro").strip(),
-        safety_model=(_first(env, "VERTEX_MODEL_SAFETY", "GEMINI_CONTENT_MODEL", default="gemini-2.5-flash") or "gemini-2.5-flash").strip(),
-        fast_model=(_first(env, "VERTEX_MODEL_FAST", "VERTEX_MODEL_FLASH", "VERTEX_MODEL_SAFETY", default="gemini-2.5-flash") or "gemini-2.5-flash").strip(),
+        timeout_seconds=_as_int(_first(env, "VERTEX_TIMEOUT_SECONDS"), _MD["timeout_seconds"]),
+        request_min_interval_ms=_as_int(_first(env, "VERTEX_REQUEST_MIN_INTERVAL_MS"), _MD["request_min_interval_ms"]),
+        request_jitter_ms=_as_int(_first(env, "VERTEX_REQUEST_JITTER_MS"), _MD["request_jitter_ms"]),
+        max_retries=_as_int(_first(env, "VERTEX_MAX_RETRIES"), _MD["max_retries"]),
+        retry_backoff_seconds=float(_first(env, "VERTEX_RETRY_BACKOFF_SECONDS", default=str(_MD["retry_backoff_seconds"])) or _MD["retry_backoff_seconds"]),
+        text_model=(_first(env, "VERTEX_MODEL_TEXT", "GEMINI_CONTENT_MODEL", default=_MD["text_model"]) or _MD["text_model"]).strip(),
+        structured_model=(_first(env, "VERTEX_MODEL_STRUCTURED", "GEMINI_CONTENT_MODEL", default=_MD["structured_model"]) or _MD["structured_model"]).strip(),
+        research_model=(_first(env, "VERTEX_MODEL_RESEARCH", "GEMINI_CONTENT_MODEL", default=_MD["research_model"]) or _MD["research_model"]).strip(),
+        safety_model=(_first(env, "VERTEX_MODEL_SAFETY", "GEMINI_CONTENT_MODEL", default=_MD["safety_model"]) or _MD["safety_model"]).strip(),
+        fast_model=(_first(env, "VERTEX_MODEL_FAST", "VERTEX_MODEL_FLASH", "VERTEX_MODEL_SAFETY", default=_MD["fast_model"]) or _MD["fast_model"]).strip(),
     )
 
 

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "description": "Copyediting style rules for S8. red_flags list words that trigger style violations; replacements maps each flag to a preferred alternative. Update per book without touching code.",
+
+  "red_flags": ["무조건", "절대", "완벽한", "최고의", "엄청난"],
+
+  "replacements": {
+    "무조건": "가급적",
+    "절대":   "쉽게",
+    "완벽한": "탄탄한",
+    "최고의": "인상적인",
+    "엄청난": "큰"
+  }
+}

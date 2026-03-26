@@ -315,5 +315,17 @@
       "quality_gate": ["context_gap_closed", "transition_naturalness_pass"],
       "decision_rule": "Use when paragraph or section transitions feel abrupt and need bridging logic."
     }
-  ]
+  ],
+
+  "part_anchor_types": {
+    "_comment": "Preferred anchor type order per book part. Consumed by anchors._part_anchor_types(). Keys match substring checked against chapter.part field.",
+    "default":  ["SB", "DS"],
+    "intro":    ["SB", "DS"],
+    "outro":    ["SB", "AI"],
+    "CINEMA":   ["BT", "CO", "DS"],
+    "CINEMA_HOT_ISSUE": ["TL", "BT", "CO"],
+    "HISTORY":  ["TL", "RM", "FN"],
+    "TRAVEL":   ["EP", "PF", "CO"],
+    "TASTE":    ["EP", "BT", "SB"]
+  }
 }

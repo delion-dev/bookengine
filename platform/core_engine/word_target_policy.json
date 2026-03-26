@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "description": "Word-count targets, adjustment deltas, anchor budgets, and stage progress floors. Single source of truth consumed by targets.py. Modify here to retune per-book chapter length policy without touching code.",
+
+  "base_targets": {
+    "intro":   2200,
+    "outro":   1800,
+    "CINEMA":  2400,
+    "HISTORY": 2500,
+    "TRAVEL":  2100,
+    "TASTE":   1900,
+    "default": 1800
+  },
+
+  "adjustments": {
+    "hot_issue_topic":              450,
+    "subtitle_present":             120,
+    "multi_subject_scope":          120,
+    "supplementary_note_per_item":  120,
+    "supplementary_note_max_delta": 240,
+    "location_specific_guidance":   180,
+    "practical_recommendation_density": 120,
+    "location_keywords": {
+      "TRAVEL": ["청령포", "장릉", "천문대", "선돌"]
+    },
+    "recommendation_keywords": {
+      "TASTE": ["투어", "챌린지", "막걸리", "카페"]
+    }
+  },
+
+  "anchor_budgets": {
+    "intro":   2,
+    "outro":   2,
+    "TRAVEL":  3,
+    "HISTORY": { "default": 2, "hot_issue": 3, "high_word_threshold": 2700 },
+    "CINEMA":  { "default": 2, "hot_issue": 3 },
+    "TASTE":   { "default": 2, "high_word_threshold": 2000, "high_word_budget": 3 },
+    "default": 2
+  },
+
+  "stage_progress_floors": {
+    "S4_draft1_ratio": 0.90,
+    "S4_draft1_min_words": 900,
+    "S5_draft2_ratio": 0.92,
+    "S8_final_ratio":  0.95
+  },
+
+  "word_range": {
+    "min_ratio": 0.85,
+    "max_ratio": 1.15,
+    "chars_per_word_estimate": 2.2
+  }
+}

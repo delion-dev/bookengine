@@ -60,25 +60,30 @@ def render_anchor_block(anchor: dict[str, Any]) -> str:
     return "\n".join([start, slot, end])
 
 
+def _part_anchor_type_map() -> dict[str, list[str]]:
+    """Return part→anchor_types mapping from anchor_type_catalog.json."""
+    return load_anchor_catalog().get("part_anchor_types", {})
+
+
 def _part_anchor_types(chapter: dict[str, Any]) -> list[str]:
     part = chapter.get("part", "")
     title = chapter["title"]
+    pat = _part_anchor_type_map()
+    default = list(pat.get("default", ["SB", "DS"]))
+
     if chapter["chapter_id"] == "intro":
-        return ["SB", "DS"]
+        return list(pat.get("intro", ["SB", "DS"]))
     if chapter["chapter_id"] == "outro":
-        return ["SB", "AI"]
-    if "CINEMA" in part:
-        ordered = ["BT", "CO", "DS"]
-        if "[HOT ISSUE]" in title:
-            ordered = ["TL", "BT", "CO"]
-        return ordered
-    if "HISTORY" in part:
-        return ["TL", "RM", "FN"]
-    if "TRAVEL" in part:
-        return ["EP", "PF", "CO"]
-    if "TASTE" in part:
-        return ["EP", "BT", "SB"]
-    return ["SB", "DS"]
+        return list(pat.get("outro", ["SB", "AI"]))
+    # Check part-specific mappings (longest matching key wins, hot_issue variant first)
+    for part_key in (pat.keys() - {"default", "intro", "outro", "_comment"}):
+        if part_key in part:
+            # Hot-issue variant takes precedence when title signals it
+            hot_key = f"{part_key}_HOT_ISSUE"
+            if "[HOT ISSUE]" in title and hot_key in pat:
+                return list(pat[hot_key])
+            return list(pat[part_key])
+    return default
 
 
 def _chapter_anchor_types(chapter: dict[str, Any], budget: int) -> list[str]:

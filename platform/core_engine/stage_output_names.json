@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "description": "Semantic name for each output slot per stage. Names are parallel to the 'output' array in stage_definitions.json. Used by get_stage_output() to replace fragile index-based access.",
+
+  "stages": {
+    "S-1": ["intake_manifest"],
+    "S0":  ["book_config", "word_targets", "anchor_policy", "book_blueprint", "style_guide", "quality_criteria"],
+    "S1":  ["work_order", "pipeline_status"],
+    "S2":  ["research_plan", "source_queue", "citations", "reference_index", "image_manifest", "reference_index_md"],
+    "S3":  ["raw_guide", "anchor_plan"],
+    "S4":  ["draft1_prose", "node_manifest", "segment_plan", "narrative_design", "density_audit", "session_report"],
+    "S4A": ["draft1", "anchor_injection_report", "anchor_scope_report"],
+    "S5":  ["draft2", "review_report", "rights_review", "review_nodes"],
+    "S6":  ["draft3", "visual_plan", "visual_support"],
+    "S6A": ["asset_collection_manifest", "asset_collection_doc"],
+    "S6B": ["cleared_assets", "provenance", "ingestion_report"],
+    "S7":  ["draft4", "visual_bundle"],
+    "S8":  ["draft5", "proofreading_report"],
+    "S8A": ["draft6", "amplification_report", "amplification_nodes"],
+    "SQA": ["publication_clearance_report", "qa_report"],
+    "S9":  ["epub", "pdf", "frontcover", "publication_manifest", "seo_metadata", "store_listing"]
+  }
+}

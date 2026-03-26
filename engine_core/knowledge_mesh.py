@@ -28,13 +28,53 @@ from .memory import load_shared_memory
 
 
 # ---------------------------------------------------------------------------
-# Constants
+# Constants (fallback values — overridable via BOOK_CONFIG.json knowledge_mesh section)
 # ---------------------------------------------------------------------------
 
-MESH_VERSION = "1.0"
+MESH_VERSION = "1.1"
 _MAX_BRIDGE_CLAIMS = 5       # per upstream chapter
 _MAX_BRIDGE_CHAPTERS = 3     # how many upstream chapters to include
 _MAX_THREAD_ENTRIES = 20     # per thematic thread
+
+# ---------------------------------------------------------------------------
+# Stopword sets — filter noise from thematic thread extraction
+# ---------------------------------------------------------------------------
+
+_KO_STOPWORDS: frozenset[str] = frozenset({
+    "있는", "있다", "없는", "없다", "하는", "하다", "되는", "되다", "이다",
+    "것이다", "때문에", "대해서", "위해서", "통해서", "이라는", "에서의",
+    "으로의", "아니다", "이러한", "그러한", "어떤", "모든", "하지만",
+    "그러나", "따라서", "그리고", "또한", "뿐만", "아니라", "이에", "따라",
+    "위한", "대한", "통한", "관한", "속에서", "함께", "에서", "으로",
+})
+
+_EN_STOPWORDS: frozenset[str] = frozenset({
+    "that", "this", "with", "have", "from", "they", "been", "were", "will",
+    "which", "than", "when", "what", "your", "each", "these", "those",
+    "their", "there", "about", "would", "could", "should", "people",
+    "through", "before", "after", "again", "more", "also", "some",
+    "just", "into", "very", "well", "such", "only", "then", "over",
+})
+
+_ALL_STOPWORDS = _KO_STOPWORDS | _EN_STOPWORDS
+
+
+# ---------------------------------------------------------------------------
+# Config loader — reads mesh parameters from book's BOOK_CONFIG.json
+# ---------------------------------------------------------------------------
+
+def _get_mesh_config(book_root: Path) -> dict[str, Any]:
+    """Return merged mesh configuration (book-local overrides + defaults)."""
+    book_config = read_json(book_root / "_master" / "BOOK_CONFIG.json", default={}) or {}
+    defaults: dict[str, Any] = {
+        "max_bridge_claims": _MAX_BRIDGE_CLAIMS,
+        "max_bridge_chapters": _MAX_BRIDGE_CHAPTERS,
+        "max_thread_entries": _MAX_THREAD_ENTRIES,
+        "enable_cross_chapter_edges": True,
+        "cross_chapter_min_match_ratio": 0.4,
+        "stopwords_lang": "ko",
+    }
+    return {**defaults, **book_config.get("knowledge_mesh", {})}
 
 
 # ---------------------------------------------------------------------------
@@ -82,14 +122,21 @@ def _node_from_chapter_memory(chapter_memory: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _is_stopword(word: str) -> bool:
+    return word in _ALL_STOPWORDS
+
+
 def _extract_thematic_threads(
     chapter_sequence: list[str],
     nodes: dict[str, dict[str, Any]],
+    max_thread_entries: int = _MAX_THREAD_ENTRIES,
 ) -> dict[str, list[dict[str, Any]]]:
     """Build thematic thread index from claims/issues across all chapters.
 
-    A thread is a named concept that appears in multiple chapter nodes.
-    Simple heuristic: shared significant words across claims.
+    Improvements over v1.0:
+      - Stopword filtering (Korean + English) removes noise words
+      - Config-based max_thread_entries (no longer hardcoded)
+      - Words < 4 chars still excluded; stopwords additionally filtered
     """
     threads: dict[str, list[dict[str, Any]]] = {}
     for chapter_id in chapter_sequence:
@@ -98,33 +145,34 @@ def _extract_thematic_threads(
             continue
         for claim in node.get("claims", []):
             words = set(
-                w.lower().strip(".,;:\"'()")
+                w.lower().strip(".,;:\"'()[]『』「」")
                 for w in claim.split()
-                if len(w) > 3
+                if len(w) > 3 and not _is_stopword(w.lower().strip(".,;:\"'()[]『』「」"))
             )
             for word in words:
+                if not word:
+                    continue
                 threads.setdefault(word, [])
                 entries = threads[word]
-                if len(entries) < _MAX_THREAD_ENTRIES:
+                if len(entries) < max_thread_entries:
                     entries.append({
                         "chapter_id": chapter_id,
                         "claim": claim[:120],
                     })
 
-    # Keep only threads that span 2+ chapters
-    multi_chapter_threads = {
+    # Keep only threads that span 2+ distinct chapters
+    return {
         word: entries
         for word, entries in threads.items()
         if len({e["chapter_id"] for e in entries}) >= 2
     }
-    return multi_chapter_threads
 
 
-def _build_dependency_edges(
+def _build_sequential_edges(
     chapter_sequence: list[str],
     nodes: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Create sequential dependency edges based on chapter order and open questions."""
+    """Create forward-sequential dependency edges (ch[n-1] → ch[n])."""
     edges: list[dict[str, Any]] = []
     for idx, chapter_id in enumerate(chapter_sequence):
         if idx == 0:
@@ -140,6 +188,72 @@ def _build_dependency_edges(
                 "bridged_issues": unresolved[:3],
                 "carry_forward_summary": prev_node.get("summary", "")[:200],
             })
+    return edges
+
+
+def _build_cross_chapter_edges(
+    chapter_sequence: list[str],
+    nodes: dict[str, dict[str, Any]],
+    min_match_ratio: float = 0.4,
+) -> list[dict[str, Any]]:
+    """Detect non-linear (cross-chapter) dependencies.
+
+    If chapter B's claims contain keywords that resolve chapter A's unresolved
+    issue — and A, B are non-adjacent — we record a cross_chapter_resolution edge.
+    This captures cases like ch05 answering a question raised in ch02.
+    """
+    edges: list[dict[str, Any]] = []
+    seen_pairs: set[tuple[str, str]] = set()
+
+    for i, chapter_b in enumerate(chapter_sequence):
+        node_b = nodes.get(chapter_b, {})
+        claims_text = " ".join(node_b.get("claims", [])).lower()
+        if not claims_text:
+            continue
+
+        for j, chapter_a in enumerate(chapter_sequence):
+            if i == j or abs(i - j) <= 1:
+                continue  # Skip self and adjacent chapters (handled by sequential edges)
+            if (chapter_a, chapter_b) in seen_pairs:
+                continue
+
+            node_a = nodes.get(chapter_a, {})
+            for issue in node_a.get("unresolved_issues", []):
+                issue_words = [
+                    w.lower().strip(".,;:\"'()")
+                    for w in issue.split()
+                    if len(w) > 3 and not _is_stopword(w.lower())
+                ]
+                if not issue_words:
+                    continue
+                matches = sum(1 for w in issue_words if w in claims_text)
+                ratio = matches / len(issue_words)
+                if ratio >= min_match_ratio:
+                    edges.append({
+                        "from_chapter": chapter_a,
+                        "to_chapter": chapter_b,
+                        "dependency_type": "cross_chapter_resolution",
+                        "resolved_issue": issue[:100],
+                        "match_ratio": round(ratio, 2),
+                    })
+                    seen_pairs.add((chapter_a, chapter_b))
+                    break  # One edge per chapter pair is sufficient
+
+    return edges
+
+
+def _build_dependency_edges(
+    chapter_sequence: list[str],
+    nodes: dict[str, dict[str, Any]],
+    enable_cross_chapter: bool = True,
+    cross_chapter_min_match_ratio: float = 0.4,
+) -> list[dict[str, Any]]:
+    """Build all dependency edges: sequential + optional cross-chapter."""
+    edges = _build_sequential_edges(chapter_sequence, nodes)
+    if enable_cross_chapter:
+        edges.extend(_build_cross_chapter_edges(
+            chapter_sequence, nodes, min_match_ratio=cross_chapter_min_match_ratio
+        ))
     return edges
 
 
@@ -162,8 +276,16 @@ def build_mesh(book_id: str, book_root: Path) -> dict[str, Any]:
         if chapter_id in chapter_sequence:
             nodes[chapter_id] = _node_from_chapter_memory(cm)
 
-    thematic_threads = _extract_thematic_threads(chapter_sequence, nodes)
-    dependency_edges = _build_dependency_edges(chapter_sequence, nodes)
+    cfg = _get_mesh_config(book_root)
+    thematic_threads = _extract_thematic_threads(
+        chapter_sequence, nodes,
+        max_thread_entries=int(cfg["max_thread_entries"]),
+    )
+    dependency_edges = _build_dependency_edges(
+        chapter_sequence, nodes,
+        enable_cross_chapter=bool(cfg["enable_cross_chapter_edges"]),
+        cross_chapter_min_match_ratio=float(cfg["cross_chapter_min_match_ratio"]),
+    )
 
     # Gather book-level open questions
     book_memory = shared.get("book_memory", {})
@@ -253,7 +375,11 @@ def get_bridge_context(book_root: Path, chapter_id: str) -> dict[str, Any]:
     except ValueError:
         return {"upstream_summaries": [], "bridged_issues": [], "thematic_threads": []}
 
-    upstream_ids = chapter_sequence[max(0, idx - _MAX_BRIDGE_CHAPTERS):idx]
+    cfg = _get_mesh_config(book_root)
+    max_bridge_chapters = int(cfg["max_bridge_chapters"])
+    max_bridge_claims = int(cfg["max_bridge_claims"])
+
+    upstream_ids = chapter_sequence[max(0, idx - max_bridge_chapters):idx]
     upstream_summaries: list[dict[str, Any]] = []
     bridged_issues: list[str] = []
 
@@ -264,7 +390,7 @@ def get_bridge_context(book_root: Path, chapter_id: str) -> dict[str, Any]:
         upstream_summaries.append({
             "chapter_id": uid,
             "summary": node.get("summary", "")[:300],
-            "key_claims": node.get("claims", [])[:_MAX_BRIDGE_CLAIMS],
+            "key_claims": node.get("claims", [])[:max_bridge_claims],
         })
         for issue in node.get("unresolved_issues", []):
             if issue not in bridged_issues:

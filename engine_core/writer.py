@@ -9,7 +9,7 @@ from typing import Any
 from .ag01_engine import execute_s4_pipeline
 from .book_state import load_book_db
 from .common import PLATFORM_CORE_ROOT, count_words, now_iso, read_json, read_text, write_json, write_text
-from .contracts import resolve_stage_contract, validate_inputs
+from .contracts import get_stage_output, resolve_stage_contract, validate_inputs
 from .context_packs import build_context_bundle
 from .gates import evaluate_gate
 from .memory import update_chapter_memory
@@ -49,14 +49,15 @@ NETWORK_RECOVERY_COOLDOWN_SECONDS: int = _s4_execution_limits()["network_recover
 
 
 def _s4_output_bundle(book_id: str, book_root: Path, chapter_id: str) -> dict[str, str]:
-    outputs = resolve_stage_contract(book_id, book_root, "S4", chapter_id)["outputs"]
+    """Return resolved output paths for S4 using semantic named keys.
+
+    Uses get_stage_output() — no index dependency; safe against output reordering.
+    """
+    _keys = ("draft1_prose", "node_manifest", "segment_plan",
+             "narrative_design", "density_audit", "session_report")
     return {
-        "draft1_prose": outputs[0],
-        "node_manifest": outputs[1],
-        "segment_plan": outputs[2],
-        "narrative_design": outputs[3],
-        "density_audit": outputs[4],
-        "session_report": outputs[5],
+        key: get_stage_output(book_id, book_root, "S4", key, chapter_id)
+        for key in _keys
     }
 
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from .common import (
+    PLATFORM_CORE_ROOT,
     STAGE_DEFINITIONS_PATH,
     append_jsonl,
     new_id,
@@ -11,6 +13,8 @@ from .common import (
     read_json,
     render_template_path,
 )
+
+_OUTPUT_NAMES_FILE = PLATFORM_CORE_ROOT / "stage_output_names.json"
 
 
 def load_stage_definitions() -> dict[str, Any]:
@@ -25,6 +29,30 @@ def get_stage_definition(stage_id: str) -> dict[str, Any]:
         if stage["id"] == stage_id:
             return stage
     raise KeyError(f"Unknown stage_id: {stage_id}")
+
+
+@lru_cache(maxsize=1)
+def _load_output_names() -> dict[str, list[str]]:
+    """Load {stage_id: [name, ...]} from stage_output_names.json. Cached in process."""
+    payload = read_json(_OUTPUT_NAMES_FILE, default={}) or {}
+    return payload.get("stages", {})
+
+
+def _build_output_map(stage_id: str, output_paths: list[str]) -> dict[str, str]:
+    """Build {name: resolved_path} for a stage's outputs.
+
+    Falls back to positional keys ("output_0", "output_1", ...) when
+    stage_output_names.json has no entry for this stage.
+    """
+    names = _load_output_names().get(stage_id, [])
+    if not names:
+        return {f"output_{i}": path for i, path in enumerate(output_paths)}
+    # Zip — if counts differ, the shorter side wins (extra outputs get fallback keys)
+    result: dict[str, str] = {}
+    for i, path in enumerate(output_paths):
+        key = names[i] if i < len(names) else f"output_{i}"
+        result[key] = path
+    return result
 
 
 def resolve_stage_contract(
@@ -45,14 +73,41 @@ def resolve_stage_contract(
         str(render_template_path(template, book_root, book_id, chapter_id))
         for template in stage.get("output", [])
     ]
+    output_map = _build_output_map(stage_id, outputs)
     return {
         "stage_id": stage["id"],
         "name": stage["name"],
         "agent": stage["agent"],
         "inputs": inputs,
         "outputs": outputs,
+        "output_map": output_map,   # ← named-key access (replaces fragile index lookups)
         "gate": stage["gate"],
     }
+
+
+def get_stage_output(
+    book_id: str,
+    book_root: Path,
+    stage_id: str,
+    key: str,
+    chapter_id: str | None = None,
+) -> str:
+    """Return the resolved file path for a named output slot.
+
+    Example:
+        path = get_stage_output(book_id, book_root, "S4", "draft1_prose", chapter_id)
+
+    Raises KeyError if the key is not defined for this stage.
+    """
+    contract = resolve_stage_contract(book_id, book_root, stage_id, chapter_id)
+    output_map = contract["output_map"]
+    if key not in output_map:
+        available = list(output_map.keys())
+        raise KeyError(
+            f"Output key '{key}' not found for stage '{stage_id}'. "
+            f"Available: {available}"
+        )
+    return output_map[key]
 
 
 def validate_inputs(

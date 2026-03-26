@@ -119,6 +119,8 @@ class MeshNodeUpdateRequest(BaseModel):
     summary: str | None = None
     claims: list[str] | None = None
     unresolved_issues: list[str] | None = None
+    citations_summary: list[str] | None = None
+    visual_notes: list[str] | None = None
 
 
 # ---------------------------------------------------------------------------

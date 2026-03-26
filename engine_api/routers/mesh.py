@@ -9,11 +9,26 @@ from engine_core.knowledge_mesh import (
     get_bridge_context,
     query_mesh,
     update_chapter_node,
+    mesh_path,
 )
+from engine_core.common import read_json
 from engine_api.deps import resolve_book_root
 from engine_api.models import MeshBuildRequest, MeshNodeUpdateRequest, MeshQueryRequest
 
 router = APIRouter(prefix="/engine/mesh", tags=["mesh"])
+
+
+@router.get("")
+def get_mesh(book_id: str):
+    """Return the current persisted knowledge mesh for the book."""
+    book_root = resolve_book_root(book_id)
+    path = mesh_path(book_root)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Knowledge mesh not built yet. Call POST /engine/mesh/build first.")
+    mesh = read_json(path, default=None)
+    if mesh is None:
+        raise HTTPException(status_code=500, detail="Failed to read mesh file.")
+    return mesh
 
 
 @router.post("/build")
@@ -64,6 +79,8 @@ def update_node(req: MeshNodeUpdateRequest):
             summary=req.summary,
             claims=req.claims,
             unresolved_issues=req.unresolved_issues,
+            citations_summary=req.citations_summary,
+            visual_notes=req.visual_notes,
         )
         return {"ok": True, "chapter_id": req.chapter_id}
     except Exception as exc:

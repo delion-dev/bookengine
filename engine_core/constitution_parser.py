@@ -22,7 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from .common import PLATFORM_CORE_ROOT, now_iso, read_text
+from .common import PLATFORM_CORE_ROOT, now_iso, read_json, read_text
 
 
 # ---------------------------------------------------------------------------
@@ -51,8 +51,12 @@ _STAGE_ARTICLE_FOCUS: dict[str, list[int]] = {
     "S9":  [1, 2, 4, 6, 7],
 }
 
-# Maps stage_id → agent_id (canonical mapping from stage_definitions)
-_STAGE_AGENT_MAP: dict[str, str] = {
+# ---------------------------------------------------------------------------
+# Stage → Agent mapping — loaded dynamically from stage_definitions.json
+# Hardcoded fallback used only when the JSON file is unavailable.
+# ---------------------------------------------------------------------------
+
+_STAGE_AGENT_MAP_FALLBACK: dict[str, str] = {
     "S-1": "AG-IN",
     "S0":  "AG-AR",
     "S1":  "AG-OM",
@@ -69,6 +73,28 @@ _STAGE_AGENT_MAP: dict[str, str] = {
     "S8A": "AG-05A",
     "S9":  "AG-06",
 }
+
+
+@lru_cache(maxsize=1)
+def _load_stage_agent_map() -> dict[str, str]:
+    """Build {stage_id: agent_id} from stage_definitions.json. Cached in process."""
+    payload = read_json(PLATFORM_CORE_ROOT / "stage_definitions.json", default={}) or {}
+    mapping: dict[str, str] = {}
+    for stage in payload.get("stages", []):
+        sid = stage.get("id")
+        agent = stage.get("agent")
+        if sid and agent:
+            mapping[sid] = agent
+    return mapping or dict(_STAGE_AGENT_MAP_FALLBACK)
+
+
+def get_agent_id_for_stage(stage_id: str) -> str:
+    """Return the canonical agent_id for a stage_id.
+
+    Reads from stage_definitions.json (single source of truth).
+    Falls back to the embedded map if the file is unavailable.
+    """
+    return _load_stage_agent_map().get(stage_id, "AG-UNKNOWN")
 
 _ARTICLE_HEADING_PATTERN = re.compile(
     r"^## 제(\d+)조[.。]?\s+(.+)$", re.MULTILINE
@@ -167,6 +193,7 @@ def reload_all() -> None:
     """Clear caches — call when source files are known to have changed."""
     _load_constitution.cache_clear()
     _load_agent_sops.cache_clear()
+    _load_stage_agent_map.cache_clear()
 
 
 # ---------------------------------------------------------------------------
@@ -224,7 +251,7 @@ def build_constitutional_injection(
       - stage_id: str
       - agent_id: str
     """
-    resolved_agent = agent_id or _STAGE_AGENT_MAP.get(stage_id, "AG-UNKNOWN")
+    resolved_agent = agent_id or get_agent_id_for_stage(stage_id)
     rules = get_constitution_rules(stage_id)[:max_rules]
 
     sop_rules: list[str] = []

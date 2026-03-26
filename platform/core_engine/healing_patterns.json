@@ -1,0 +1,120 @@
+{
+  "version": "1.1",
+  "description": "ASHL failure patterns and per-pattern retry/circuit-breaker config. Single source of truth — replaces _FAILURE_PATTERNS and MAX_AUTO_RETRIES in self_healing.py.",
+
+  "default_max_auto_retries": 2,
+  "default_circuit_break_after": 4,
+
+  "patterns": [
+    {
+      "pattern_id": "ingestion_report_missing",
+      "stage_ids": ["S6B"],
+      "check_names": ["ingestion_report_exists"],
+      "remedy": "retry",
+      "max_auto_retries": 3,
+      "circuit_break_after": 5,
+      "note": "Image ingestion report missing — reset S6B to pending.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "ingestion_error_present",
+      "stage_ids": ["S6B"],
+      "check_names": ["ingestion_status_synced"],
+      "remedy": "retry",
+      "max_auto_retries": 3,
+      "circuit_break_after": 5,
+      "note": "Image ingestion recorded errors — reset S6B to pending for re-processing.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "model_all_fallback",
+      "stage_ids": ["S4", "S5", "S8A"],
+      "check_names": ["s8a_live_contribution_present"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 4,
+      "note": "All model nodes fell back — likely transient API error. Retry.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "word_count_floor_miss",
+      "stage_ids": ["S4"],
+      "check_names": ["min_length_reached"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 3,
+      "note": "Draft did not meet minimum word count — rerun prose generation.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "anchor_slot_residue",
+      "stage_ids": ["S7"],
+      "check_names": ["draft4_exists"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 4,
+      "note": "[ANCHOR_SLOT:] tokens remain in draft4 — rerun visual render.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "style_violations",
+      "stage_ids": ["S8"],
+      "check_names": ["style_violations_zero_or_acceptable"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 4,
+      "note": "Style violations remain — rerun copyedit.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "amplification_ratio_exceeded",
+      "stage_ids": ["S8A"],
+      "check_names": ["s8a_amplification_ratio_within_cap"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 3,
+      "note": "Amplification ratio exceeded cap — rerun with tighter constraints.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "epub_pdf_missing",
+      "stage_ids": ["S9"],
+      "check_names": ["epub_generated", "pdf_generated"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 4,
+      "note": "Publication output missing — rerun S9.",
+      "auto_apply": true
+    },
+    {
+      "pattern_id": "unresolved_claims",
+      "stage_ids": ["S5"],
+      "check_names": ["unsupported_claims_zero"],
+      "remedy": "escalate",
+      "max_auto_retries": 0,
+      "circuit_break_after": 1,
+      "note": "Unsupported claims remain after review — operator must provide sources.",
+      "auto_apply": false
+    },
+    {
+      "pattern_id": "missing_rights_provenance",
+      "stage_ids": ["S5"],
+      "check_names": ["rights_provenance_complete"],
+      "remedy": "escalate",
+      "max_auto_retries": 0,
+      "circuit_break_after": 1,
+      "note": "Rights provenance incomplete — offline clearance required.",
+      "auto_apply": false
+    },
+    {
+      "pattern_id": "epub_validation_failed",
+      "stage_ids": ["S11"],
+      "check_names": ["epub_valid"],
+      "remedy": "retry",
+      "max_auto_retries": 2,
+      "circuit_break_after": 3,
+      "note": "EPUB validation failed — rerun S11 packaging.",
+      "auto_apply": true
+    }
+  ]
+}

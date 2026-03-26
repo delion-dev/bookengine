@@ -1,0 +1,344 @@
+{
+  "version": "1.1",
+  "description": "Per-stage execution policies, token budgets, and runtime limits. Single source of truth — replaces hardcoded dicts in context_packs.py and writer.py.",
+
+  "default_token_budget": {
+    "soft_max_input_tokens": 5500,
+    "soft_max_output_tokens": 2800
+  },
+
+  "default_execution_limits": {
+    "max_expansions": 3,
+    "network_recovery_passes": 1,
+    "network_recovery_cooldown_seconds": 20
+  },
+
+  "stages": {
+    "S-1": {
+      "task_family": "intake_normalization",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 3000,
+        "soft_max_output_tokens": 1500
+      },
+      "global_characteristics": [
+        "Normalize user input into canonical intake_manifest.json.",
+        "Validate required sections: proposal, toc_seed.",
+        "Do not infer missing fields — flag them for operator review."
+      ],
+      "local_characteristics": [
+        "Intake scope is limited to the provided proposal and toc_seed only.",
+        "No model generation allowed — structural transformation only."
+      ]
+    },
+    "S0": {
+      "task_family": "architecture_design",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 6000,
+        "soft_max_output_tokens": 3000
+      },
+      "global_characteristics": [
+        "Produce a stable BOOK_BLUEPRINT that downstream stages rely on.",
+        "Define word targets, anchor policy, and quality criteria explicitly.",
+        "Audience segmentation must be declared and not inferred later."
+      ],
+      "local_characteristics": [
+        "Structure follows intake_manifest book intent.",
+        "Style guide tone profile is derived from proposal language.",
+        "Part/chapter hierarchy must be internally consistent."
+      ]
+    },
+    "S1": {
+      "task_family": "pipeline_orchestration",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 4000,
+        "soft_max_output_tokens": 2000
+      },
+      "global_characteristics": [
+        "Produce WORK_ORDER and PIPELINE_STATUS from book_db state.",
+        "Prioritize unblocked chapters; flag gate_failed items for healing.",
+        "Parallelism rules: S4/S5/S7/S8 are chapter-independent."
+      ],
+      "local_characteristics": [
+        "Work order reflects current pipeline state, not target state.",
+        "Pending items must be ordered by chapter sequence and dependency depth."
+      ]
+    },
+    "S2": {
+      "task_family": "research_strategy",
+      "preferred_model_route": "engine.model.grounded_research",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 6500,
+        "soft_max_output_tokens": 3000
+      },
+      "global_characteristics": [
+        "Define source quality tiers and freshness windows explicitly.",
+        "Reserve appendix reference IDs before any chapter drafting begins.",
+        "Rights and provenance policy must be established here, not later."
+      ],
+      "local_characteristics": [
+        "Research questions are scoped to the chapter's declared audience segment.",
+        "Image manifest soures are categorized: ext / usr / ai."
+      ]
+    },
+    "S3": {
+      "task_family": "chapter_guide_generation",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 5500,
+        "soft_max_output_tokens": 2800
+      },
+      "global_characteristics": [
+        "Generate raw guide and anchor plan per chapter.",
+        "Anchor obligations must reference only IDs declared in ANCHOR_POLICY.",
+        "Do not write reader-facing prose — this is a plan, not a draft."
+      ],
+      "local_characteristics": [
+        "Guide structure follows hook/context/insight/takeaway sections.",
+        "Evidence slots are chapter-local and appendix-aware.",
+        "Anchor budget per chapter is from WORD_TARGETS anchor_budget field."
+      ]
+    },
+    "S4": {
+      "task_family": "draft_generation",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "subsection_nodes_sequential",
+      "token_budget": {
+        "soft_max_input_tokens": 9000,
+        "soft_max_output_tokens": 3600
+      },
+      "execution_limits": {
+        "max_expansions": 3,
+        "network_recovery_passes": 1,
+        "network_recovery_cooldown_seconds": 20
+      },
+      "global_characteristics": [
+        "Preserve chapter structure and anchor obligations.",
+        "Prefer distilled policy context over raw master documents.",
+        "Use chapter-local research questions and source priorities."
+      ],
+      "local_characteristics": [
+        "Audience tone follows book-local style guide.",
+        "Section target words follow chapter-local word targets.",
+        "Node context is limited to the active subsection plus continuity excerpts."
+      ]
+    },
+    "S4A": {
+      "task_family": "research_supplement",
+      "preferred_model_route": "engine.model.grounded_research",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 6000,
+        "soft_max_output_tokens": 2500
+      },
+      "global_characteristics": [
+        "Supplement S4 draft with verified references and citations.",
+        "Source trust filtering is mandatory — low-trust sources flagged only.",
+        "Anchor reference IDs must be reconciled with image_manifest."
+      ],
+      "local_characteristics": [
+        "Scope limited to this chapter's declared research questions.",
+        "Freshness window follows chapter part policy from research_plan.json."
+      ]
+    },
+    "S5": {
+      "task_family": "grounded_review",
+      "preferred_model_route": "engine.model.grounded_research",
+      "node_strategy": "section_review_nodes_sequential",
+      "token_budget": {
+        "soft_max_input_tokens": 8500,
+        "soft_max_output_tokens": 3600
+      },
+      "execution_limits": {
+        "max_expansions": 2,
+        "network_recovery_passes": 1,
+        "network_recovery_cooldown_seconds": 20
+      },
+      "global_characteristics": [
+        "Require attributable sources and trust filtering.",
+        "Keep publication-safe wording and fact caution.",
+        "Separate primary sources from supplemental low-trust signals."
+      ],
+      "local_characteristics": [
+        "Freshness windows depend on chapter part and research policy.",
+        "Reference slots are chapter-local and appendix-aware.",
+        "Review focuses on the current chapter draft and current source queue only."
+      ]
+    },
+    "S6": {
+      "task_family": "anchor_visualization",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "anchor_render_nodes_sequential",
+      "token_budget": {
+        "soft_max_input_tokens": 5500,
+        "soft_max_output_tokens": 3000
+      },
+      "global_characteristics": [
+        "Replace ANCHOR_SLOT tokens with rendered content only — no prose edits.",
+        "ANCHOR_START/END metadata must be preserved or commented out.",
+        "Non-anchor prose is read-only."
+      ],
+      "local_characteristics": [
+        "Render type (table/mermaid/svg/image_ref) follows visual_plan.json.",
+        "Caption language is Korean-first per Reader Annotation Rule."
+      ]
+    },
+    "S6A": {
+      "task_family": "asset_collection",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 4000,
+        "soft_max_output_tokens": 2000
+      },
+      "global_characteristics": [
+        "Produce asset_collection_manifest with canonical filenames and paths.",
+        "appendix_ref ↔ image_manifest 1:1 reconciliation required.",
+        "Provenance source mode must be declared: ext / usr / ai."
+      ],
+      "local_characteristics": [
+        "Cleared assets are staged to publication/assets/cleared/{chapter_id}/.",
+        "Offline binding status is tracked per anchor in the manifest."
+      ]
+    },
+    "S6B": {
+      "task_family": "image_asset_management",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 4000,
+        "soft_max_output_tokens": 2000
+      },
+      "global_characteristics": [
+        "Validate ingested images against rights and provenance records.",
+        "AI-generated images require prompt and model recorded in sidecar.",
+        "Cleared assets must meet Google Books minimum resolution: 1600×2560px for cover."
+      ],
+      "local_characteristics": [
+        "Per-anchor asset validation follows asset_collection_manifest.",
+        "Ingestion errors trigger ASHL healing pattern: ingestion_error_present."
+      ]
+    },
+    "S7": {
+      "task_family": "asset_integration",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 7000,
+        "soft_max_output_tokens": 3200
+      },
+      "global_characteristics": [
+        "Merge cleared assets into draft3 per visual_plan.json.",
+        "Anchor block barrers must be preserved after asset injection.",
+        "META_START/META_END operational blocks are removed in this stage."
+      ],
+      "local_characteristics": [
+        "appendix REFERENCE_INDEX.md is auto-generated from anchor references.",
+        "draft3 is the final pre-review manuscript — structural changes not allowed post-S7."
+      ]
+    },
+    "S8": {
+      "task_family": "copyediting",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "section_review_nodes_sequential",
+      "token_budget": {
+        "soft_max_input_tokens": 6500,
+        "soft_max_output_tokens": 3000
+      },
+      "global_characteristics": [
+        "Fix style violations against QUALITY_CRITERIA without altering meaning.",
+        "Korean orthography, foreign loanword notation, and heading rules enforced.",
+        "Anchor blocks are read-only."
+      ],
+      "local_characteristics": [
+        "Style violation count is the primary gate check.",
+        "Copyedit scope is sentence/paragraph level — no structural rewrites."
+      ]
+    },
+    "S8A": {
+      "task_family": "tone_value_amplification",
+      "preferred_model_route": "engine.model.generate_text",
+      "node_strategy": "rewrite_block_nodes_sequential",
+      "token_budget": {
+        "soft_max_input_tokens": 5000,
+        "soft_max_output_tokens": 2800
+      },
+      "execution_limits": {
+        "max_expansions": 2,
+        "network_recovery_passes": 1,
+        "network_recovery_cooldown_seconds": 20
+      },
+      "global_characteristics": [
+        "Preserve facts, names, chronology, and caveats.",
+        "Amplification must never mutate anchors or publication-safe blocks.",
+        "Grounded appendices and source lists are preserved, not rewritten."
+      ],
+      "local_characteristics": [
+        "Rewrite only canonical chapter prose sections.",
+        "Reader payoff and scene cues depend on chapter part.",
+        "Amplification is measured against the source draft, not the whole book."
+      ]
+    },
+    "S9": {
+      "task_family": "publication_preparation",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 5000,
+        "soft_max_output_tokens": 2000
+      },
+      "global_characteristics": [
+        "Assemble all chapter draft3 files into publication/manuscript/.",
+        "Verify SQA gate pass for all chapters before proceeding.",
+        "META blocks must be fully removed; anchor blocks may remain as comments."
+      ],
+      "local_characteristics": [
+        "Chapter order follows chapter_sequence from book_db.json.",
+        "REFERENCE_INDEX.md is finalized and cross-checked against all anchor refs."
+      ]
+    },
+    "S10": {
+      "task_family": "style_guide_application",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 4000,
+        "soft_max_output_tokens": 2000
+      },
+      "global_characteristics": [
+        "Apply selected style guide template to generate EPUB CSS.",
+        "Style guide selection is book-local — global defaults are overridable.",
+        "CUSTOM template requires explicit params_override in request."
+      ],
+      "local_characteristics": [
+        "CSS output path: publication/epub/{book_id}/OEBPS/css/style.css.",
+        "Font embedding follows Google Books WOFF2 requirements."
+      ]
+    },
+    "S11": {
+      "task_family": "epub_packaging",
+      "preferred_model_route": "engine.stage.run",
+      "node_strategy": "single_pass",
+      "token_budget": {
+        "soft_max_input_tokens": 4000,
+        "soft_max_output_tokens": 1500
+      },
+      "global_characteristics": [
+        "Produce EPUB 3.x compliant package with EPUB 2.0 NCX for compatibility.",
+        "OPF metadata must include Dublin Core + ISBN-13 or Google Books ID.",
+        "Cover image minimum: 1600×2560px, 300 DPI."
+      ],
+      "local_characteristics": [
+        "EPUB file size per chapter: 50MB max.",
+        "TOC requires both NCX and nav.xhtml (navigation document)."
+      ]
+    }
+  }
+}

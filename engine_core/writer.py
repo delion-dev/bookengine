@@ -8,7 +8,7 @@ from typing import Any
 
 from .ag01_engine import execute_s4_pipeline
 from .book_state import load_book_db
-from .common import count_words, now_iso, read_json, read_text, write_json, write_text
+from .common import PLATFORM_CORE_ROOT, count_words, now_iso, read_json, read_text, write_json, write_text
 from .contracts import resolve_stage_contract, validate_inputs
 from .context_packs import build_context_bundle
 from .gates import evaluate_gate
@@ -27,9 +27,25 @@ from .work_order import issue_work_order
 from .section_labels import SECTION_ORDER, display_section_label, section_marker, strip_leading_section_heading
 
 
-MAX_S4_EXPANSIONS = 3
-MAX_NETWORK_RECOVERY_PASSES = 1
-NETWORK_RECOVERY_COOLDOWN_SECONDS = 20
+# ---------------------------------------------------------------------------
+# Execution limits — loaded from stage_execution_policies.json (S4 entry)
+# Fallback to conservative defaults if the file is unavailable.
+# ---------------------------------------------------------------------------
+
+def _s4_execution_limits() -> dict[str, Any]:
+    payload = read_json(PLATFORM_CORE_ROOT / "stage_execution_policies.json", default={}) or {}
+    s4 = payload.get("stages", {}).get("S4", {})
+    limits = s4.get("execution_limits") or payload.get("default_execution_limits") or {}
+    return {
+        "max_expansions": int(limits.get("max_expansions", 3)),
+        "network_recovery_passes": int(limits.get("network_recovery_passes", 1)),
+        "network_recovery_cooldown_seconds": int(limits.get("network_recovery_cooldown_seconds", 20)),
+    }
+
+
+MAX_S4_EXPANSIONS: int = _s4_execution_limits()["max_expansions"]
+MAX_NETWORK_RECOVERY_PASSES: int = _s4_execution_limits()["network_recovery_passes"]
+NETWORK_RECOVERY_COOLDOWN_SECONDS: int = _s4_execution_limits()["network_recovery_cooldown_seconds"]
 
 
 def _s4_output_bundle(book_id: str, book_root: Path, chapter_id: str) -> dict[str, str]:

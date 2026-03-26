@@ -23,11 +23,13 @@ Failure patterns and remedies:
   - unknown                      → escalate to operator
 """
 
+import json as _json
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from .book_state import load_book_db
-from .common import append_jsonl, ensure_dir, now_iso, read_json, write_json
+from .common import PLATFORM_CORE_ROOT, append_jsonl, ensure_dir, now_iso, read_json, write_json
 from .stage import transition_stage
 from .work_order import issue_work_order
 
@@ -39,25 +41,21 @@ from .work_order import issue_work_order
 HEALING_LOG_VERSION = "1.0"
 HEALING_REPORT_VERSION = "1.0"
 
-# Maximum auto-retries per (chapter_id, stage_id) before escalation
-MAX_AUTO_RETRIES = 2
+_HEALING_PATTERNS_FILE = PLATFORM_CORE_ROOT / "healing_patterns.json"
 
-# Known failure → diagnosis pattern → remedy
-_FAILURE_PATTERNS: list[dict[str, Any]] = [
+# ---------------------------------------------------------------------------
+# Builtin fallback patterns — used only when healing_patterns.json unavailable
+# ---------------------------------------------------------------------------
+
+_BUILTIN_PATTERNS: list[dict[str, Any]] = [
     {
         "pattern_id": "ingestion_report_missing",
         "stage_ids": ["S6B"],
         "check_names": ["ingestion_report_exists"],
         "remedy": "retry",
+        "max_auto_retries": 3,
+        "circuit_break_after": 5,
         "note": "Image ingestion report missing — reset S6B to pending.",
-        "auto_apply": True,
-    },
-    {
-        "pattern_id": "ingestion_error_present",
-        "stage_ids": ["S6B"],
-        "check_names": ["ingestion_status_synced"],
-        "remedy": "retry",
-        "note": "Image ingestion recorded errors — reset S6B to pending for re-processing.",
         "auto_apply": True,
     },
     {
@@ -65,6 +63,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S4", "S5", "S8A"],
         "check_names": ["s8a_live_contribution_present"],
         "remedy": "retry",
+        "max_auto_retries": 2,
+        "circuit_break_after": 4,
         "note": "All model nodes fell back — likely transient API error. Retry.",
         "auto_apply": True,
     },
@@ -73,6 +73,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S4"],
         "check_names": ["min_length_reached"],
         "remedy": "retry",
+        "max_auto_retries": 2,
+        "circuit_break_after": 3,
         "note": "Draft did not meet minimum word count — rerun prose generation.",
         "auto_apply": True,
     },
@@ -81,6 +83,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S7"],
         "check_names": ["draft4_exists"],
         "remedy": "retry",
+        "max_auto_retries": 2,
+        "circuit_break_after": 4,
         "note": "[ANCHOR_SLOT:] tokens remain in draft4 — rerun visual render.",
         "auto_apply": True,
     },
@@ -89,6 +93,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S8"],
         "check_names": ["style_violations_zero_or_acceptable"],
         "remedy": "retry",
+        "max_auto_retries": 2,
+        "circuit_break_after": 4,
         "note": "Style violations remain — rerun copyedit.",
         "auto_apply": True,
     },
@@ -97,6 +103,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S8A"],
         "check_names": ["s8a_amplification_ratio_within_cap"],
         "remedy": "retry",
+        "max_auto_retries": 2,
+        "circuit_break_after": 3,
         "note": "Amplification ratio exceeded cap — rerun with tighter constraints.",
         "auto_apply": True,
     },
@@ -105,6 +113,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S9"],
         "check_names": ["epub_generated", "pdf_generated"],
         "remedy": "retry",
+        "max_auto_retries": 2,
+        "circuit_break_after": 4,
         "note": "Publication output missing — rerun S9.",
         "auto_apply": True,
     },
@@ -113,6 +123,8 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S5"],
         "check_names": ["unsupported_claims_zero"],
         "remedy": "escalate",
+        "max_auto_retries": 0,
+        "circuit_break_after": 1,
         "note": "Unsupported claims remain after review — operator must provide sources.",
         "auto_apply": False,
     },
@@ -121,10 +133,40 @@ _FAILURE_PATTERNS: list[dict[str, Any]] = [
         "stage_ids": ["S5"],
         "check_names": ["rights_provenance_complete"],
         "remedy": "escalate",
+        "max_auto_retries": 0,
+        "circuit_break_after": 1,
         "note": "Rights provenance incomplete — offline clearance required.",
         "auto_apply": False,
     },
 ]
+
+
+# ---------------------------------------------------------------------------
+# Pattern loader — reads from healing_patterns.json, falls back to builtin
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=1)
+def _load_failure_patterns() -> list[dict[str, Any]]:
+    """Load failure patterns from healing_patterns.json. Cached in process."""
+    payload = read_json(_HEALING_PATTERNS_FILE, default=None)
+    if payload and payload.get("patterns"):
+        return payload["patterns"]
+    return list(_BUILTIN_PATTERNS)
+
+
+def _default_max_retries() -> int:
+    payload = read_json(_HEALING_PATTERNS_FILE, default={}) or {}
+    return int(payload.get("default_max_auto_retries", 2))
+
+
+def _default_circuit_break_after() -> int:
+    payload = read_json(_HEALING_PATTERNS_FILE, default={}) or {}
+    return int(payload.get("default_circuit_break_after", 4))
+
+
+def reload_healing_patterns() -> None:
+    """Clear pattern cache — call when healing_patterns.json changes."""
+    _load_failure_patterns.cache_clear()
 
 
 # ---------------------------------------------------------------------------
@@ -142,8 +184,7 @@ def _retry_count(book_root: Path, chapter_id: str, stage_id: str) -> int:
     count = 0
     for line in log_path.read_text(encoding="utf-8").splitlines():
         try:
-            import json
-            entry = json.loads(line)
+            entry = _json.loads(line)
             if (
                 entry.get("chapter_id") == chapter_id
                 and entry.get("stage_id") == stage_id
@@ -182,24 +223,24 @@ def _log_healing_event(
 def _diagnose_failure(
     gate_failure: dict[str, Any],
 ) -> dict[str, Any] | None:
-    """Match a gate_failure record to a known failure pattern."""
+    """Match a gate_failure record to a known failure pattern (loaded from JSON)."""
+    patterns = _load_failure_patterns()
     stage_id = gate_failure.get("stage_id", "")
     reason = gate_failure.get("reason", "")
 
-    for pattern in _FAILURE_PATTERNS:
-        if stage_id not in pattern["stage_ids"]:
+    for pattern in patterns:
+        if stage_id not in pattern.get("stage_ids", []):
             continue
-        # Match by check name mentioned in reason string
-        for check_name in pattern["check_names"]:
+        # Match by check name or pattern_id mentioned in reason string
+        for check_name in pattern.get("check_names", []):
             if check_name in reason or pattern["pattern_id"] in reason:
                 return pattern
-        # If reason is generic, use first pattern for this stage_id
     # Fallback: first pattern for this stage
-    for pattern in _FAILURE_PATTERNS:
-        if stage_id in pattern["stage_ids"]:
+    for pattern in patterns:
+        if stage_id in pattern.get("stage_ids", []):
             return pattern
 
-    return None  # unknown pattern
+    return None  # unknown pattern — escalate manually
 
 
 def _apply_remedy(
@@ -214,14 +255,28 @@ def _apply_remedy(
     note = pattern["note"]
     auto_applied = False
 
+    # Per-pattern retry limit (falls back to global default)
+    max_retries = int(pattern.get("max_auto_retries", _default_max_retries()))
+    circuit_break = int(pattern.get("circuit_break_after", _default_circuit_break_after()))
+
     if action == "retry" and pattern.get("auto_apply"):
-        retry_count = _retry_count(book_root, chapter_id, stage_id)
-        if retry_count >= MAX_AUTO_RETRIES:
+        current_retries = _retry_count(book_root, chapter_id, stage_id)
+        if current_retries >= circuit_break:
             action = "escalate"
-            note = f"Auto-retry cap ({MAX_AUTO_RETRIES}) reached. Escalating."
+            note = (
+                f"Circuit breaker triggered: {current_retries} retries ≥ "
+                f"circuit_break_after={circuit_break}. Manual intervention required."
+            )
+        elif current_retries >= max_retries:
+            action = "escalate"
+            note = f"Auto-retry cap ({max_retries}) reached. Escalating."
         else:
             if not dry_run:
-                transition_stage(book_root, stage_id, "pending", chapter_id if chapter_id != "BOOK" else None, note=note)
+                transition_stage(
+                    book_root, stage_id, "pending",
+                    chapter_id if chapter_id != "BOOK" else None,
+                    note=note,
+                )
             auto_applied = not dry_run
     elif action == "escalate":
         auto_applied = False
@@ -239,6 +294,8 @@ def _apply_remedy(
         "note": note,
         "auto_applied": auto_applied,
         "retry_count": _retry_count(book_root, chapter_id, stage_id) if action == "retry" else None,
+        "max_auto_retries": max_retries,
+        "circuit_break_after": circuit_break,
     }
 
 
@@ -330,12 +387,11 @@ def get_healing_log(book_root: Path, limit: int = 50) -> list[dict[str, Any]]:
     log_path = _healing_log_path(book_root)
     if not log_path.exists():
         return []
-    import json
     lines = log_path.read_text(encoding="utf-8").strip().splitlines()
     entries = []
     for line in lines[-limit:]:
         try:
-            entries.append(json.loads(line))
+            entries.append(_json.loads(line))
         except Exception:
             pass
     return list(reversed(entries))

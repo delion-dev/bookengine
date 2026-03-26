@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -15,64 +16,63 @@ from .targets import get_chapter_target
 
 CONTEXT_PACK_VERSION = "1.0"
 _MARKDOWN_H2_PATTERN = re.compile(r"(?m)^## ([^\n]+)\s*$")
-_DEFAULT_STAGE_TOKEN_BUDGETS = {
-    "S4": {"soft_max_input_tokens": 9000, "soft_max_output_tokens": 3600},
-    "S5": {"soft_max_input_tokens": 8500, "soft_max_output_tokens": 3600},
-    "S8A": {"soft_max_input_tokens": 5000, "soft_max_output_tokens": 2800},
+
+# ---------------------------------------------------------------------------
+# Stage Execution Policies — loaded from stage_execution_policies.json
+# Fallback values are used only when the JSON file is unavailable.
+# ---------------------------------------------------------------------------
+
+_POLICY_FILE = PLATFORM_CORE_ROOT / "stage_execution_policies.json"
+
+_FALLBACK_TOKEN_BUDGET = {"soft_max_input_tokens": 5500, "soft_max_output_tokens": 2800}
+_FALLBACK_POLICY = {
+    "task_family": "generic_stage_execution",
+    "preferred_model_route": "engine.stage.run",
+    "node_strategy": "stage_default",
+    "global_characteristics": [
+        "Follow artifact contracts and gate checks.",
+        "Use distilled context instead of full source documents when possible.",
+    ],
+    "local_characteristics": [
+        "Book-local rules may refine content, not engine policy.",
+    ],
 }
-_GLOBAL_CONSTITUTION_RULES = [
-    "Agents may call models only through engine.model.* APIs.",
-    "Context must be staged as policy, book, chapter, and node packs.",
-    "Book-local content may change, but global engine policy may not be overridden by a book.",
-    "No stage may bypass artifact contracts or gate checks.",
-]
-_STAGE_EXECUTION_POLICIES = {
-    "S4": {
-        "task_family": "draft_generation",
-        "preferred_model_route": "engine.model.generate_text",
-        "node_strategy": "subsection_nodes_sequential",
-        "global_characteristics": [
-            "Preserve chapter structure and anchor obligations.",
-            "Prefer distilled policy context over raw master documents.",
-            "Use chapter-local research questions and source priorities.",
-        ],
-        "local_characteristics": [
-            "Audience tone follows book-local style guide.",
-            "Section target words follow chapter-local word targets.",
-            "Node context is limited to the active subsection plus continuity excerpts.",
-        ],
-    },
-    "S5": {
-        "task_family": "grounded_review",
-        "preferred_model_route": "engine.model.grounded_research",
-        "node_strategy": "section_review_nodes_sequential",
-        "global_characteristics": [
-            "Require attributable sources and trust filtering.",
-            "Keep publication-safe wording and fact caution.",
-            "Separate primary sources from supplemental low-trust signals.",
-        ],
-        "local_characteristics": [
-            "Freshness windows depend on chapter part and research policy.",
-            "Reference slots are chapter-local and appendix-aware.",
-            "Review focuses on the current chapter draft and current source queue only.",
-        ],
-    },
-    "S8A": {
-        "task_family": "tone_value_amplification",
-        "preferred_model_route": "engine.model.generate_text",
-        "node_strategy": "rewrite_block_nodes_sequential",
-        "global_characteristics": [
-            "Preserve facts, names, chronology, and caveats.",
-            "Amplification must never mutate anchors or publication-safe blocks.",
-            "Grounded appendices and source lists are preserved, not rewritten.",
-        ],
-        "local_characteristics": [
-            "Rewrite only canonical chapter prose sections.",
-            "Reader payoff and scene cues depend on chapter part.",
-            "Amplification is measured against the source draft, not the whole book.",
-        ],
-    },
-}
+
+
+@lru_cache(maxsize=1)
+def _load_stage_execution_policies() -> dict[str, Any]:
+    """Load stage_execution_policies.json once, cache in process."""
+    return read_json(_POLICY_FILE, default={}) or {}
+
+
+def _get_stage_policy(stage_id: str) -> dict[str, Any]:
+    """Return execution policy for a stage, falling back to generic defaults."""
+    stages = _load_stage_execution_policies().get("stages", {})
+    entry = stages.get(stage_id, {})
+    if not entry:
+        return dict(_FALLBACK_POLICY)
+    # Return only policy keys (exclude token_budget and execution_limits)
+    policy = {k: v for k, v in entry.items() if k not in ("token_budget", "execution_limits")}
+    # Ensure required keys exist
+    for key in ("task_family", "preferred_model_route", "node_strategy",
+                "global_characteristics", "local_characteristics"):
+        if key not in policy:
+            policy[key] = _FALLBACK_POLICY.get(key, "")
+    return policy
+
+
+def _get_token_budget(stage_id: str) -> dict[str, Any]:
+    """Return token budget for a stage, falling back to conservative defaults."""
+    stages = _load_stage_execution_policies().get("stages", {})
+    entry = stages.get(stage_id, {})
+    return entry.get("token_budget") or dict(
+        _load_stage_execution_policies().get("default_token_budget") or _FALLBACK_TOKEN_BUDGET
+    )
+
+
+def reload_stage_policies() -> None:
+    """Clear policy cache — call when stage_execution_policies.json changes."""
+    _load_stage_execution_policies.cache_clear()
 
 
 def _context_pack_root(book_root: Path) -> Path:
@@ -141,35 +141,34 @@ def _compact_text(value: Any, max_chars: int = 600) -> str:
     return compact[:max_chars]
 
 
-def _approx_token_count(text: str) -> int:
+def _approx_token_count(text: str, lang: str = "auto") -> int:
+    """Estimate token count with language-aware character ratios.
+
+    Ratios (chars per token):
+      Korean (ko): ~2.0  — CJK characters encode densely but count as ~1 token each
+      English (en): ~4.0 — English words average ~1.3 tokens but characters are wider
+      auto: detect dominant script and apply weighted average
+    """
     if not text:
         return 0
-    # Korean/English mixed prompts are estimated conservatively by character count.
-    return max(1, math.ceil(len(text) / 2.7))
+    if lang == "ko":
+        ratio = 2.0
+    elif lang == "en":
+        ratio = 4.0
+    else:
+        # Auto: count CJK codepoints and apply weighted blend
+        cjk_chars = sum(1 for ch in text if "\uAC00" <= ch <= "\uD7A3" or "\u4E00" <= ch <= "\u9FFF")
+        cjk_ratio = cjk_chars / max(len(text), 1)
+        # Blend: cjk_ratio × 2.0 + (1 - cjk_ratio) × 4.0
+        ratio = cjk_ratio * 2.0 + (1.0 - cjk_ratio) * 4.0
+    return max(1, math.ceil(len(text) / ratio))
 
 
 def build_policy_pack(book_root: Path, stage_id: str) -> dict[str, Any]:
     stage_definition = _load_stage_definition(stage_id)
     gate_definition = _load_gate_definition(stage_definition["gate"])
-    stage_policy = _STAGE_EXECUTION_POLICIES.get(
-        stage_id,
-        {
-            "task_family": "generic_stage_execution",
-            "preferred_model_route": "engine.stage.run",
-            "node_strategy": "stage_default",
-            "global_characteristics": [
-                "Follow artifact contracts and gate checks.",
-                "Use distilled context instead of full source documents when possible.",
-            ],
-            "local_characteristics": [
-                "Book-local rules may refine content, not engine policy.",
-            ],
-        },
-    )
-    token_budget = _DEFAULT_STAGE_TOKEN_BUDGETS.get(
-        stage_id,
-        {"soft_max_input_tokens": 5500, "soft_max_output_tokens": 2800},
-    )
+    stage_policy = _get_stage_policy(stage_id)
+    token_budget = _get_token_budget(stage_id)
     payload = {
         "version": CONTEXT_PACK_VERSION,
         "pack_type": "policy_pack",
@@ -182,6 +181,7 @@ def build_policy_pack(book_root: Path, stage_id: str) -> dict[str, Any]:
             "platform/core_engine/CONSTITUTION.md",
             "platform/core_engine/PROJECT_SOP.md",
             "platform/core_engine/stage_definitions.json",
+            "platform/core_engine/stage_execution_policies.json",
             "platform/core_engine/gate_definitions.json",
         ],
         "constitution_rules": get_constitution_rules(stage_id),

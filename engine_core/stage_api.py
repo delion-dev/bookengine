@@ -20,7 +20,7 @@ from .session import close_session, open_session
 from .telemetry import build_runtime_telemetry_dashboard
 from .visual_renderer import run_visual_render
 from .visual_planner import run_visual_plan
-from .writer import run_draft1
+from .s4_orchestrator import run_s4
 
 
 StageHandler = Callable[..., dict[str, Any]]
@@ -38,7 +38,7 @@ STAGE_HANDLERS: dict[str, StageHandler] = {
     "S1": _book_only(run_orchestration),
     "S2": _book_only(run_research_plan),
     "S3": run_raw_guides,
-    "S4": run_draft1,
+    "S4": run_s4,
     "S4A": run_anchor_injection,
     "S5": run_review,
     "S6": run_visual_plan,

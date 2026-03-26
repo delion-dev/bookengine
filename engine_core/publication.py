@@ -38,7 +38,8 @@ from .stage import transition_stage
 from .work_order import issue_work_order
 
 
-PDF_FONT_FAMILY = "NanumGothic"
+PDF_FONT_FAMILY = "NanumGothic"   # PIL cover rendering (TTF required)
+EPUB_BODY_FONT  = "Pretendard"    # EPUB text — modern geometric sans-serif
 COVER_SIZE = (1400, 2000)
 SUPPORTED_EPUB_IMAGE_SUFFIXES = {".gif", ".jpeg", ".jpg", ".png", ".svg"}
 MD_LINK_PATTERN = re.compile(r"(!?\[[^\]]*\]\()([^)]+)(\))")
@@ -51,6 +52,42 @@ class PublicationChapter:
     source_path: Path
     source_stage: str
     markdown: str
+
+
+@dataclass
+class EpubMeta:
+    identifier: str
+    title: str
+    language: str
+    creator: str
+    publisher: str
+    description: str
+    subjects: list[str]
+    modified_timestamp: str
+
+
+@dataclass(frozen=True)
+class EpubManifestEntry:
+    item_id: str
+    href: str
+    media_type: str
+    properties: str = ""
+
+    def to_opf_line(self) -> str:
+        props = f' properties="{self.properties}"' if self.properties else ""
+        return f'    <item id="{self.item_id}" href="{self.href}" media-type="{self.media_type}"{props}/>'
+
+
+@dataclass
+class EpubStagingDirs:
+    root: Path
+    meta_inf: Path
+    epub_root: Path
+    text_dir: Path
+    styles_dir: Path
+    fonts_dir: Path
+    images_dir: Path
+    assets_dir: Path
 
 
 def _sha256(path: Path) -> str:
@@ -150,14 +187,15 @@ def _safe_slug(value: str) -> str:
 
 
 def _font_sources() -> dict[str, Path]:
-    platform_font_root = REPO_ROOT / "platform" / "fonts" / "NanumGothic-main"
+    """Return font paths for cover image rendering (PIL — TTF required)."""
+    nanum_root = REPO_ROOT / "platform" / "fonts" / "NanumGothic-main"
     candidates = {
         "regular": [
-            platform_font_root / "NanumGothic.ttf",
+            nanum_root / "NanumGothic.ttf",
             Path(r"C:\Windows\Fonts\NanumGothic.ttf"),
         ],
         "bold": [
-            platform_font_root / "NanumGothicBold.ttf",
+            nanum_root / "NanumGothicBold.ttf",
             Path(r"C:\Windows\Fonts\NanumGothicBold.ttf"),
         ],
     }
@@ -167,6 +205,30 @@ def _font_sources() -> dict[str, Path]:
         if source is None:
             raise FileNotFoundError(f"Required publication font not found for {weight}: {paths}")
         selected[weight] = source
+    return selected
+
+
+def _epub_font_sources() -> dict[str, Path]:
+    """Return Pretendard OTF paths for EPUB embedding.
+
+    Weight map:
+      light    → 300  (captions, footnotes)
+      regular  → 400  (body text)
+      semibold → 600  (sub-headings, emphasis)
+      bold     → 700  (h1, chapter titles)
+    """
+    pretendard_root = REPO_ROOT / "platform" / "fonts" / "Pretendard-main"
+    candidates = {
+        "light":    pretendard_root / "Pretendard-Light.otf",
+        "regular":  pretendard_root / "Pretendard-Regular.otf",
+        "semibold": pretendard_root / "Pretendard-SemiBold.otf",
+        "bold":     pretendard_root / "Pretendard-Bold.otf",
+    }
+    selected: dict[str, Path] = {}
+    for weight, path in candidates.items():
+        if not path.exists():
+            raise FileNotFoundError(f"Pretendard font not found: {path}")
+        selected[weight] = path
     return selected
 
 
@@ -223,21 +285,49 @@ def _cover_title_parts(working_title: str) -> tuple[str, str]:
     return working_title.strip(), ""
 
 
+# epub_style_guide → BISAC/Google Books subject category mapping
+_EPUB_STYLE_SUBJECTS: dict[str, list[str]] = {
+    "GBOOK-TECH": [
+        "Computers / Artificial Intelligence",
+        "Software Development & Engineering",
+        "Business & Economics / Information Management",
+    ],
+    "GBOOK-ACAD": ["Education / General", "Academic Reference"],
+    "GBOOK-BUSI": ["Business & Economics / Management", "Business & Economics / General"],
+    "GBOOK-NFIC": ["Fiction / Literary", "Fiction / Cultural Heritage"],
+    "GBOOK-TUTO": ["Computers / General", "Self-Help / General"],
+    "GBOOK-MINI": ["Computers / General"],
+    "GBOOK-CUSTOM": [],
+}
+
+
 def _seo_keywords(book_config: dict[str, Any], book_db: dict[str, Any]) -> list[str]:
-    candidates = [
-        book_config["working_title"],
-        "영화 왕과 사는 남자",
-        "왕과 사는 남자 성지순례",
-        "영월 여행",
-        "단종",
-        "박지훈",
-        "장항준",
-        "청령포",
-        "장릉",
-        "영월 맛집",
-        "조선 역사",
-        "영화 촬영지",
-    ]
+    """Build SEO keyword list from BOOK_CONFIG fields and chapter titles.
+
+    No book-specific hardcoded terms — derives entirely from the config so
+    every book gets correct keywords without code changes.
+    Priority: explicit seo.keywords override → display_name + working_title
+    + chapter titles (first 6).
+    """
+    # Explicit override wins
+    override = book_config.get("seo", {}).get("keywords", [])
+    if override:
+        return list(override)[:12]
+
+    candidates: list[str] = []
+    working_title = book_config.get("working_title", "")
+    display_name = book_config.get("display_name", "")
+
+    # Title splits (before / after colon) yield useful sub-keywords
+    for raw in [working_title, display_name]:
+        if raw:
+            candidates.append(raw.strip())
+            if ":" in raw:
+                for part in raw.split(":", 1):
+                    p = part.strip()
+                    if p:
+                        candidates.append(p)
+
     for chapter_id in book_db["chapter_sequence"][:6]:
         candidates.append(book_db["chapters"][chapter_id]["title"])
 
@@ -261,6 +351,48 @@ def _chapter_teasers(chapters: list[PublicationChapter], limit: int = 4) -> list
     return teasers
 
 
+def _derive_subjects(book_config: dict[str, Any]) -> list[str]:
+    """Derive BISAC subjects from epub_style_guide; falls back to seo.subjects override."""
+    override = book_config.get("seo", {}).get("subjects", [])
+    if override:
+        return list(override)
+    style_guide = book_config.get("epub_style_guide", "")
+    return list(_EPUB_STYLE_SUBJECTS.get(style_guide, []))
+
+
+def _derive_descriptions(book_config: dict[str, Any]) -> tuple[str, str]:
+    """Build short + long descriptions from BOOK_CONFIG.
+
+    Priority for each field:
+      1. Explicit seo.short_description / seo.long_description override
+      2. Derived from audience_segments (focus + reader_payoff)
+      3. Plain working_title fallback
+    """
+    seo_override = book_config.get("seo", {})
+    display_name = book_config.get("display_name") or book_config.get("working_title", "")
+    segments: list[dict[str, Any]] = book_config.get("audience_segments", [])
+
+    # Short description
+    short = seo_override.get("short_description", "")
+    if not short:
+        if segments:
+            focus = segments[0].get("focus", "")
+            short = f"{display_name}. {focus}를 위한 실전 가이드."
+        else:
+            short = display_name
+
+    # Long description
+    long = seo_override.get("long_description", "")
+    if not long:
+        if segments:
+            payoffs = [seg.get("reader_payoff", "") for seg in segments if seg.get("reader_payoff")]
+            long = "\n\n".join(payoffs) if payoffs else display_name
+        else:
+            long = display_name
+
+    return short, long
+
+
 def _build_seo_pack(
     book_config: dict[str, Any],
     book_db: dict[str, Any],
@@ -268,23 +400,9 @@ def _build_seo_pack(
 ) -> tuple[dict[str, Any], str]:
     title, subtitle = _cover_title_parts(book_config["working_title"])
     keywords = _seo_keywords(book_config, book_db)
-    subjects = [
-        "Film & Performing Arts",
-        "Travel / Korea",
-        "History / Korea",
-        "Popular Culture",
-    ]
+    subjects = _derive_subjects(book_config)
+    short_description, long_description = _derive_descriptions(book_config)
     teaser_text = "; ".join(_chapter_teasers(chapters))
-    short_description = (
-        "영화 <왕과 사는 남자>의 감정선, 단종의 역사, 영월 촬영지와 로컬 맛을 "
-        "독자 중심의 에디토리얼 시선으로 엮은 성지순례 가이드."
-    )
-    long_description = (
-        "이 책은 스크린 안의 비극을 감상으로만 소비하지 않고, 박지훈의 연기와 장항준의 연출, "
-        "단종 서사의 실제 역사, 그리고 영월 현장의 동선과 식탁까지 한 권으로 연결한다.\n\n"
-        "영화 해설서, 역사 입문서, 여행 가이드, 로컬 큐레이션의 성격을 함께 갖추되, "
-        "독자가 바로 보고, 걷고, 비교하고, 이야기할 수 있는 문장으로 정리했다."
-    )
     seo_payload = {
         "version": "1.0",
         "book_id": book_config["book_id"],
@@ -568,44 +686,238 @@ th {{
 
 
 def _epub_css() -> str:
-    return f"""@font-face {{
-  font-family: "{PDF_FONT_FAMILY}";
-  src: url("../fonts/NanumGothic.ttf") format("truetype");
+    """Generate EPUB CSS for AI/SW tech books.
+
+    Font stack  : Pretendard (embedded OTF) — modern geometric Korean sans-serif
+    Color palette: cool blue-gray tech tone (replaces warm travel-book palette)
+    Extras       : code blocks, callout boxes, layer-label sections, figure captions
+    """
+    f = EPUB_BODY_FONT
+    return f"""/* BookEngine EPUB — GBOOK-TECH (Pretendard) */
+
+/* ── @font-face ──────────────────────────────── */
+@font-face {{
+  font-family: "{f}";
+  src: url("../fonts/Pretendard-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+}}
+
+@font-face {{
+  font-family: "{f}";
+  src: url("../fonts/Pretendard-Regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
 }}
 
 @font-face {{
-  font-family: "{PDF_FONT_FAMILY}";
-  src: url("../fonts/NanumGothicBold.ttf") format("truetype");
+  font-family: "{f}";
+  src: url("../fonts/Pretendard-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+}}
+
+@font-face {{
+  font-family: "{f}";
+  src: url("../fonts/Pretendard-Bold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
 }}
 
+/* ── Base ────────────────────────────────────── */
 body {{
   margin: 0;
-  padding: 0 5%;
-  color: #2b241f;
-  font-family: "{PDF_FONT_FAMILY}", sans-serif;
-  line-height: 1.7;
+  padding: 0 4%;
+  color: #1e2233;
+  font-family: "{f}", "NanumGothic", sans-serif;
+  font-weight: 400;
+  font-size: 1em;
+  line-height: 1.78;
+  -epub-hyphens: auto;
+  hyphens: auto;
 }}
 
 section {{
   margin: 0 0 1.5em;
 }}
 
-h1, h2, h3 {{
-  color: #1c3940;
+/* ── Headings ────────────────────────────────── */
+h1, h2, h3, h4 {{
+  font-family: "{f}", "NanumGothic", sans-serif;
   line-height: 1.3;
+  color: #0f1f4b;
+  margin-top: 1.6em;
+  margin-bottom: 0.5em;
+  page-break-after: avoid;
 }}
 
 h1 {{
-  font-size: 1.6em;
+  font-size: 1.65em;
+  font-weight: 700;
+  border-bottom: 2px solid #dde3f0;
+  padding-bottom: 0.3em;
 }}
 
 h2 {{
-  font-size: 1.15em;
-  margin-top: 1.5em;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #1a3272;
+}}
+
+h3 {{
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #2c4fa3;
+}}
+
+h4 {{
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #3d5cb8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}}
+
+/* ── Paragraph ───────────────────────────────── */
+p {{
+  margin: 0 0 0.9em;
+  text-align: justify;
+  orphans: 2;
+  widows: 2;
+}}
+
+/* ── Code ────────────────────────────────────── */
+code, kbd, samp {{
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  font-size: 0.88em;
+  background: #eef1f8;
+  color: #2c3a6e;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+}}
+
+pre {{
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  font-size: 0.85em;
+  background: #1b2033;
+  color: #cdd6f4;
+  padding: 1em 1.2em;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  page-break-inside: avoid;
+  margin: 1.4em 0;
+  line-height: 1.55;
+}}
+
+pre code {{
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}}
+
+/* ── Callout / Note / Warning (CO anchor) ────── */
+.callout, .note, .tip, .warning {{
+  border-left: 4px solid #3b5bdb;
+  background: #eef2ff;
+  padding: 0.9em 1.1em;
+  margin: 1.4em 0;
+  border-radius: 0 6px 6px 0;
+  page-break-inside: avoid;
+}}
+
+.warning {{
+  border-left-color: #e03131;
+  background: #fff5f5;
+}}
+
+.tip {{
+  border-left-color: #2f9e44;
+  background: #ebfbee;
+}}
+
+.callout-title, .note-title, .tip-title, .warning-title {{
+  font-weight: 700;
+  font-size: 0.88em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4em;
+  color: #3b5bdb;
+}}
+
+.warning .callout-title {{ color: #e03131; }}
+.tip .callout-title     {{ color: #2f9e44; }}
+
+/* ── Summary Box (SB anchor) ─────────────────── */
+.summary-box {{
+  background: #f0f4ff;
+  border: 1px solid #bac8ff;
+  border-top: 3px solid #4263eb;
+  border-radius: 6px;
+  padding: 1em 1.2em;
+  margin: 1.6em 0;
+  page-break-inside: avoid;
+}}
+
+.summary-box-title {{
+  font-weight: 700;
+  font-size: 0.9em;
+  color: #364fc7;
+  margin-bottom: 0.5em;
+}}
+
+/* ── 4-Layer Section Labels ──────────────────── */
+.layer-label {{
+  display: inline-block;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  margin-bottom: 0.6em;
+}}
+
+.layer-sdlc     {{ background: #e7f5ff; color: #1971c2; border: 1px solid #74c0fc; }}
+.layer-metagpt  {{ background: #f3f0ff; color: #7048e8; border: 1px solid #b197fc; }}
+.layer-claude   {{ background: #ebfbee; color: #2f9e44; border: 1px solid #8ce99a; }}
+.layer-case     {{ background: #fff9db; color: #e67700; border: 1px solid #ffd43b; }}
+
+/* ── Tables ──────────────────────────────────── */
+table {{
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 0.92em;
+  page-break-inside: avoid;
+}}
+
+th {{
+  background: #e8ecf8;
+  font-weight: 600;
+  color: #1a3272;
+  text-align: left;
+  padding: 0.55em 0.75em;
+  border: 1px solid #c5cee8;
+}}
+
+td {{
+  padding: 0.45em 0.75em;
+  border: 1px solid #d0d8ee;
+  vertical-align: top;
+}}
+
+tr:nth-child(even) td {{
+  background: #f7f9ff;
+}}
+
+/* ── Figures & Images ────────────────────────── */
+figure {{
+  text-align: center;
+  margin: 1.8em 0;
+  page-break-inside: avoid;
 }}
 
 img, svg {{
@@ -615,46 +927,56 @@ img, svg {{
   margin: 1em auto;
 }}
 
+figcaption {{
+  font-size: 0.82em;
+  font-weight: 300;
+  color: #5c6b9a;
+  margin-top: 0.4em;
+  font-style: italic;
+}}
+
+/* ── Blockquote ──────────────────────────────── */
 blockquote {{
-  margin: 1em 0;
-  padding: 0.6em 0.9em;
-  border-left: 0.35em solid #bf6b36;
-  background: #fcf7f1;
+  margin: 1.4em 0;
+  padding: 0.6em 1.2em;
+  border-left: 4px solid #748ffc;
+  background: #f0f4ff;
+  color: #364fc7;
+  font-style: italic;
 }}
 
-pre {{
-  padding: 0.8em;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: #f4efe8;
-  border: 1px solid #d6c5ae;
+/* ── Lists ───────────────────────────────────── */
+ul, ol {{
+  margin: 0.7em 0 0.7em 1.4em;
+  padding: 0;
 }}
 
-table {{
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
+li {{
+  margin-bottom: 0.3em;
+  line-height: 1.65;
 }}
 
-th, td {{
-  border: 1px solid #d8cab8;
-  padding: 0.45em 0.55em;
-  vertical-align: top;
-}}
-
-th {{
-  background: #f1e7d9;
-}}
-
+/* ── Links ───────────────────────────────────── */
 a {{
-  color: #0d5a66;
+  color: #3b5bdb;
   text-decoration: none;
 }}
 
+/* ── Cover ───────────────────────────────────── */
 .cover-image {{
   width: 100%;
   margin: 0;
   padding: 0;
+}}
+
+/* ── Chapter break ───────────────────────────── */
+.chapter-start {{
+  page-break-before: always;
+}}
+
+/* ── Accessibility ───────────────────────────── */
+img[alt=""] {{
+  display: none;
 }}
 """
 
@@ -851,58 +1173,59 @@ def _epub_nav_xhtml(book_config: dict[str, Any], chapters: list[PublicationChapt
 
 def _epub_package_opf(
     *,
-    book_config: dict[str, Any],
-    seo_payload: dict[str, Any],
+    meta: EpubMeta,
     chapter_files: list[Path],
+    font_entries: list[EpubManifestEntry],
     asset_files: list[Path],
-    modified_timestamp: str,
-    identifier: str,
 ) -> str:
-    creator = book_config.get("creator", "Codex Book Engine")
-    publisher = book_config.get("publisher", "Codex Book Engine")
-    description = seo_payload.get("epub_meta", {}).get("description", "")
+    """Generate EPUB 3.0 package.opf.
+
+    Font manifest entries are derived from the injected ``font_entries`` list
+    (OCP: adding/removing weights requires only changing the font source dict
+    upstream, not this function).
+    """
     subject_lines = "\n".join(
-        f"    <dc:subject>{escape(subject)}</dc:subject>"
-        for subject in seo_payload.get("epub_meta", {}).get("subjects", [])
+        f"    <dc:subject>{escape(s)}</dc:subject>"
+        for s in meta.subjects
     )
     manifest_lines = [
-        '    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
-        '    <item id="cover-image" href="images/cover.png" media-type="image/png" properties="cover-image"/>',
-        '    <item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>',
-        '    <item id="css" href="styles/book.css" media-type="text/css"/>',
-        '    <item id="font-regular" href="fonts/NanumGothic.ttf" media-type="font/ttf"/>',
-        '    <item id="font-bold" href="fonts/NanumGothicBold.ttf" media-type="font/ttf"/>',
+        EpubManifestEntry("nav", "nav.xhtml", "application/xhtml+xml", "nav").to_opf_line(),
+        EpubManifestEntry("cover-image", "images/cover.png", "image/png", "cover-image").to_opf_line(),
+        EpubManifestEntry("cover-page", "cover.xhtml", "application/xhtml+xml").to_opf_line(),
+        EpubManifestEntry("css", "styles/book.css", "text/css").to_opf_line(),
     ]
+    for entry in font_entries:
+        manifest_lines.append(entry.to_opf_line())
+
     spine_lines = ['    <itemref idref="cover-page"/>']
 
     for chapter_file in chapter_files:
         chapter_id = chapter_file.stem
-        manifest_lines.append(
-            f'    <item id="{chapter_id}" href="text/{chapter_file.name}" media-type="application/xhtml+xml"/>'
-        )
+        entry = EpubManifestEntry(chapter_id, f"text/{chapter_file.name}", "application/xhtml+xml")
+        manifest_lines.append(entry.to_opf_line())
         spine_lines.append(f'    <itemref idref="{chapter_id}"/>')
 
-    manifest_lines.append('    <item id="appendix" href="text/appendix.xhtml" media-type="application/xhtml+xml"/>')
+    manifest_lines.append(
+        EpubManifestEntry("appendix", "text/appendix.xhtml", "application/xhtml+xml").to_opf_line()
+    )
     spine_lines.append('    <itemref idref="appendix"/>')
 
     for asset_file in asset_files:
         rel = asset_file.as_posix().split("EPUB/", 1)[1]
         asset_id = _safe_slug(rel.replace("/", "-"))
-        manifest_lines.append(
-            f'    <item id="{asset_id}" href="{escape(rel)}" media-type="{_media_type(asset_file)}"/>'
-        )
+        manifest_lines.append(EpubManifestEntry(asset_id, rel, _media_type(asset_file)).to_opf_line())
 
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier id="pub-id">{escape(identifier)}</dc:identifier>
-    <dc:title>{escape(book_config["working_title"])}</dc:title>
-    <dc:language>{escape(book_config.get("language", "ko-KR"))}</dc:language>
-    <dc:creator>{escape(creator)}</dc:creator>
-    <dc:publisher>{escape(publisher)}</dc:publisher>
-    <dc:description>{escape(description)}</dc:description>
+    <dc:identifier id="pub-id">{escape(meta.identifier)}</dc:identifier>
+    <dc:title>{escape(meta.title)}</dc:title>
+    <dc:language>{escape(meta.language)}</dc:language>
+    <dc:creator>{escape(meta.creator)}</dc:creator>
+    <dc:publisher>{escape(meta.publisher)}</dc:publisher>
+    <dc:description>{escape(meta.description)}</dc:description>
 {subject_lines}
-    <meta property="dcterms:modified">{modified_timestamp}</meta>
+    <meta property="dcterms:modified">{meta.modified_timestamp}</meta>
     <meta name="cover" content="cover-image"/>
   </metadata>
   <manifest>
@@ -915,33 +1238,31 @@ def _epub_package_opf(
 """
 
 
-def _build_epub(
-    *,
-    book_root: Path,
-    book_config: dict[str, Any],
-    seo_payload: dict[str, Any],
-    chapters: list[PublicationChapter],
-    font_paths: dict[str, Path],
-    cover_path: Path,
-    output_dir: Path,
-) -> dict[str, Any]:
-    epub_path = output_dir / f"{book_config['book_id']}.epub"
-    identifier = f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, book_config['book_id'])}"
-    modified_timestamp = now_iso().replace("+09:00", "Z")
-    staging = CACHE_ROOT / "epub_staging" / book_config["book_id"]
-    if staging.exists():
-        shutil.rmtree(staging, ignore_errors=True)
-    meta_inf = ensure_dir(staging / "META-INF")
-    epub_root = ensure_dir(staging / "EPUB")
-    text_dir = ensure_dir(epub_root / "text")
-    styles_dir = ensure_dir(epub_root / "styles")
-    fonts_dir = ensure_dir(epub_root / "fonts")
-    images_dir = ensure_dir(epub_root / "images")
-    assets_dir = ensure_dir(epub_root / "assets")
+# ── EPUB Build: Single-Responsibility Steps ──────────────────────────────
 
-    write_text(staging / "mimetype", "application/epub+zip")
+
+def _setup_epub_staging(book_id: str) -> EpubStagingDirs:
+    """Create and return staging directory tree. Cleans any prior run."""
+    root = CACHE_ROOT / "epub_staging" / book_id
+    if root.exists():
+        shutil.rmtree(root, ignore_errors=True)
+    return EpubStagingDirs(
+        root=root,
+        meta_inf=ensure_dir(root / "META-INF"),
+        epub_root=ensure_dir(root / "EPUB"),
+        text_dir=ensure_dir(root / "EPUB" / "text"),
+        styles_dir=ensure_dir(root / "EPUB" / "styles"),
+        fonts_dir=ensure_dir(root / "EPUB" / "fonts"),
+        images_dir=ensure_dir(root / "EPUB" / "images"),
+        assets_dir=ensure_dir(root / "EPUB" / "assets"),
+    )
+
+
+def _write_epub_skeleton(dirs: EpubStagingDirs) -> None:
+    """Write mimetype and META-INF/container.xml."""
+    write_text(dirs.root / "mimetype", "application/epub+zip")
     write_text(
-        meta_inf / "container.xml",
+        dirs.meta_inf / "container.xml",
         """<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles>
@@ -950,14 +1271,48 @@ def _build_epub(
 </container>
 """,
     )
-    write_text(styles_dir / "book.css", _epub_css())
 
-    shutil.copy2(font_paths["regular"], fonts_dir / "NanumGothic.ttf")
-    shutil.copy2(font_paths["bold"], fonts_dir / "NanumGothicBold.ttf")
-    shutil.copy2(cover_path, images_dir / "cover.png")
 
-    publication_assets_root = (book_root / "publication" / "assets").resolve()
-    copied_asset_files = _copy_tree_files(publication_assets_root / "generated", assets_dir / "generated")
+def _embed_epub_fonts(
+    dirs: EpubStagingDirs,
+    epub_font_sources: dict[str, Path],
+) -> list[EpubManifestEntry]:
+    """Copy EPUB fonts into staging; return OPF manifest entries.
+
+    The source dict drives both file copying and manifest generation (OCP):
+    adding or removing a weight only requires changing the source dict upstream.
+    """
+    entries: list[EpubManifestEntry] = []
+    for weight, src in epub_font_sources.items():
+        shutil.copy2(src, dirs.fonts_dir / src.name)
+        entries.append(EpubManifestEntry(f"font-{weight}", f"fonts/{src.name}", _media_type(src)))
+    return entries
+
+
+def _embed_cover_image(dirs: EpubStagingDirs, cover_path: Path) -> None:
+    """Copy cover image into EPUB images dir."""
+    shutil.copy2(cover_path, dirs.images_dir / "cover.png")
+
+
+def _embed_epub_assets(
+    dirs: EpubStagingDirs,
+    publication_assets_root: Path,
+) -> list[Path]:
+    """Copy generated publication assets; return list of copied paths."""
+    return _copy_tree_files(
+        publication_assets_root / "generated",
+        dirs.assets_dir / "generated",
+    )
+
+
+def _assemble_epub_text(
+    dirs: EpubStagingDirs,
+    chapters: list[PublicationChapter],
+    book_root: Path,
+    appendix_md: str,
+) -> list[Path]:
+    """Convert chapters + appendix to XHTML; write into text_dir; return chapter file list."""
+    write_text(dirs.styles_dir / "book.css", _epub_css())
 
     chapter_files: list[Path] = []
     for chapter in chapters:
@@ -965,40 +1320,101 @@ def _build_epub(
         rewritten = _rewrite_markdown_paths(
             normalized,
             chapter.source_path,
-            text_dir,
+            dirs.text_dir,
             book_root,
-            mapped_publication_assets_root=assets_dir.resolve(),
+            mapped_publication_assets_root=dirs.assets_dir.resolve(),
         )
         chapter_html = _markdown_to_html(rewritten)
-        chapter_path = text_dir / f"{chapter.chapter_id}.xhtml"
+        chapter_path = dirs.text_dir / f"{chapter.chapter_id}.xhtml"
         write_text(chapter_path, _epub_text_xhtml(chapter.title, "../styles/book.css", chapter_html))
         chapter_files.append(chapter_path)
 
-    appendix_md = read_text(book_root / "publication" / "appendix" / "REFERENCE_INDEX.md")
     appendix_html = _markdown_to_html(appendix_md)
-    write_text(text_dir / "appendix.xhtml", _epub_text_xhtml("Reference Index", "../styles/book.css", appendix_html))
-    write_text(epub_root / "cover.xhtml", _epub_cover_xhtml(book_config["working_title"]))
-    write_text(epub_root / "nav.xhtml", _epub_nav_xhtml(book_config, chapters))
     write_text(
-        epub_root / "package.opf",
+        dirs.text_dir / "appendix.xhtml",
+        _epub_text_xhtml("Reference Index", "../styles/book.css", appendix_html),
+    )
+    return chapter_files
+
+
+def _write_epub_nav_and_opf(
+    dirs: EpubStagingDirs,
+    meta: EpubMeta,
+    book_config: dict[str, Any],
+    chapters: list[PublicationChapter],
+    chapter_files: list[Path],
+    font_entries: list[EpubManifestEntry],
+    asset_files: list[Path],
+) -> None:
+    """Write cover.xhtml, nav.xhtml, and package.opf into staging."""
+    write_text(dirs.epub_root / "cover.xhtml", _epub_cover_xhtml(meta.title))
+    write_text(dirs.epub_root / "nav.xhtml", _epub_nav_xhtml(book_config, chapters))
+    write_text(
+        dirs.epub_root / "package.opf",
         _epub_package_opf(
-            book_config=book_config,
-            seo_payload=seo_payload,
+            meta=meta,
             chapter_files=chapter_files,
-            asset_files=copied_asset_files,
-            modified_timestamp=modified_timestamp,
-            identifier=identifier,
+            font_entries=font_entries,
+            asset_files=asset_files,
         ),
     )
 
+
+def _zip_epub_archive(dirs: EpubStagingDirs, epub_path: Path) -> None:
+    """Package staging directory into a valid EPUB ZIP archive, then clean up staging."""
     with zipfile.ZipFile(epub_path, "w") as archive:
-        archive.write(staging / "mimetype", "mimetype", compress_type=zipfile.ZIP_STORED)
-        for path in sorted(staging.rglob("*")):
+        archive.write(dirs.root / "mimetype", "mimetype", compress_type=zipfile.ZIP_STORED)
+        for path in sorted(dirs.root.rglob("*")):
             if path.is_dir() or path.name == "mimetype":
                 continue
-            archive.write(path, path.relative_to(staging).as_posix(), compress_type=zipfile.ZIP_DEFLATED)
+            archive.write(
+                path,
+                path.relative_to(dirs.root).as_posix(),
+                compress_type=zipfile.ZIP_DEFLATED,
+            )
+    shutil.rmtree(dirs.root, ignore_errors=True)
 
-    shutil.rmtree(staging, ignore_errors=True)
+
+def _build_epub(
+    *,
+    book_root: Path,
+    book_config: dict[str, Any],
+    seo_payload: dict[str, Any],
+    chapters: list[PublicationChapter],
+    font_paths: dict[str, Path],
+    epub_font_sources: dict[str, Path],
+    cover_path: Path,
+    output_dir: Path,
+) -> dict[str, Any]:
+    """Orchestrate EPUB assembly via single-responsibility steps.
+
+    font_paths        — NanumGothic TTF paths (cover image / PDF rendering only, not EPUB-embedded)
+    epub_font_sources — injected font map for EPUB embedding (DIP: resolved by caller, not here)
+    """
+    epub_path = output_dir / f"{book_config['book_id']}.epub"
+    identifier = f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, book_config['book_id'])}"
+
+    meta = EpubMeta(
+        identifier=identifier,
+        title=book_config["working_title"],
+        language=book_config.get("language", "ko-KR"),
+        creator=book_config.get("creator", "BookEngine"),
+        publisher=book_config.get("publisher", "BookEngine"),
+        description=seo_payload.get("epub_meta", {}).get("description", ""),
+        subjects=seo_payload.get("epub_meta", {}).get("subjects", []),
+        modified_timestamp=now_iso().replace("+09:00", "Z"),
+    )
+
+    appendix_md = read_text(book_root / "publication" / "appendix" / "REFERENCE_INDEX.md")
+
+    dirs = _setup_epub_staging(book_config["book_id"])
+    _write_epub_skeleton(dirs)
+    font_entries = _embed_epub_fonts(dirs, epub_font_sources)
+    _embed_cover_image(dirs, cover_path)
+    asset_files = _embed_epub_assets(dirs, (book_root / "publication" / "assets").resolve())
+    chapter_files = _assemble_epub_text(dirs, chapters, book_root, appendix_md)
+    _write_epub_nav_and_opf(dirs, meta, book_config, chapters, chapter_files, font_entries, asset_files)
+    _zip_epub_archive(dirs, epub_path)
 
     return {
         "path": epub_path,
@@ -1253,6 +1669,7 @@ def run_publication(
         seo_payload=seo_payload,
         chapters=chapters,
         font_paths=font_paths,
+        epub_font_sources=_epub_font_sources(),
         cover_path=cover_info["path"],
         output_dir=output_dir,
     )
@@ -1314,7 +1731,8 @@ def run_publication(
         "google_play_books_profile": {
             "epub_target": "reflowable_epub",
             "pdf_target": "original_pages_pdf",
-            "embedded_fonts": [font_paths["regular"].name, font_paths["bold"].name],
+            "epub_embedded_fonts": [src.name for src in _epub_font_sources().values()],
+            "pdf_cover_font": PDF_FONT_FAMILY,
             "front_cover_embedded_in_epub": True,
             "separate_cover_file_generated": True,
         },

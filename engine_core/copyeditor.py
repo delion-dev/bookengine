@@ -7,7 +7,8 @@ from typing import Any
 from functools import lru_cache
 
 from .book_state import load_book_db
-from .common import PLATFORM_CORE_ROOT, read_json, read_text, write_text
+from .common import PLATFORM_CORE_ROOT, count_words, read_json, read_text, write_text
+from .targets import get_chapter_target
 from .contracts import validate_inputs
 from .gates import evaluate_gate
 from .manuscript_integrity import find_body_meta_markers, find_internal_heading_residue, sanitize_reader_manuscript
@@ -151,12 +152,15 @@ def _render_proofreading_report(
     style_findings: list[str],
     removed_sections: list[str],
     return_stage: str | None,
+    word_count_result: dict[str, Any] | None = None,
 ) -> str:
+    wc = word_count_result or {}
+    word_floor_pass = wc.get("floor_passed", True)
     lines = [
         f"# PROOFREADING_REPORT: {chapter['chapter_id']} | {chapter['title']}",
         "",
         "## Verdict",
-        "- Copyedit gate: pass" if not return_stage else "- Copyedit gate: fail",
+        "- Copyedit gate: pass" if not return_stage and word_floor_pass else "- Copyedit gate: fail",
         f"- Style issues remaining: {len(style_findings)}",
         f"- Return stage: {return_stage or 'none'}",
         "",
@@ -179,6 +183,16 @@ def _render_proofreading_report(
     lines.extend(
         [
             "",
+            "## Word Count",
+            f"- Measured words: {wc.get('measured', 'n/a')}",
+            f"- Floor (S8 final): {wc.get('floor', 'n/a')}",
+            f"- Word floor status: {'pass' if word_floor_pass else 'FAIL — below S8 final draft minimum'}",
+        ]
+    )
+
+    lines.extend(
+        [
+            "",
             "## Technical Format",
             f"- Internal sections removed: {len(removed_sections)}",
         ]
@@ -192,6 +206,7 @@ def _render_proofreading_report(
             "## Return Policy",
             f"- If this stage fails, return to `{return_stage or 'none'}`.",
             "- S4 for missing narrative structure, S7 for visual integration residue, S8 for style drift.",
+            "- Word floor failure requires content expansion before S8 can pass.",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -280,12 +295,34 @@ def run_copyedit(
         structure = _structure_checks(draft5)
         style_findings = _style_findings(draft5)
         return_stage = _return_stage(structure, style_findings)
+
+        # Measure word count against S8 final floor — preventive gate at generation time.
+        word_targets = read_json(book_root / "_master" / "WORD_TARGETS.json", default={}) or {}
+        measured_words = count_words(draft5)
+        s8_floor = 180
+        try:
+            target_entry = get_chapter_target(word_targets, current_chapter_id)
+            s8_floor = target_entry.get("stage_progress_floors", {}).get(
+                "S8_final_draft_min_words",
+                target_entry.get("stage_progress_floors", {}).get("S4_draft1_min_words", s8_floor),
+            )
+        except (KeyError, TypeError):
+            pass
+        word_count_result = {
+            "measured": measured_words,
+            "floor": s8_floor,
+            "floor_passed": measured_words >= s8_floor,
+        }
+        if not word_count_result["floor_passed"] and not return_stage:
+            return_stage = "S8"  # Flag for content expansion
+
         proofreading_report = _render_proofreading_report(
             chapter,
             structure,
             style_findings,
             removed_sections,
             return_stage,
+            word_count_result,
         )
 
         write_text(draft5_path, draft5)

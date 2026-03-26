@@ -118,7 +118,7 @@
         "grounded_body_evidence_attached",
         "rights_provenance_complete",
         "freshness_checked",
-        "unsupported_claims_zero"
+        "unsupported_claims_conditional"
       ],
       "on_fail": {
         "return_to_stage": "S5",
@@ -185,7 +185,8 @@
       "checks": [
         "style_violations_zero_or_acceptable",
         "structure_integrity_pass",
-        "proofreading_report_exists"
+        "proofreading_report_exists",
+        "word_floor_met_at_s8"
       ],
       "on_fail": {
         "return_to_stage": "S8",

@@ -122,7 +122,10 @@ def _check_word_count_floors(
         floor = _MIN_WORD_FLOOR
         target_entry = chapter_targets.get(chapter_id, {})
         floors = target_entry.get("stage_progress_floors", {})
-        floor = floors.get("S4_draft1_min_words", floor)
+        # SQA is a pre-publication gate: enforce S8 final floor, not S4 draft1 floor.
+        # S4_draft1_min_words is the absolute minimum at raw draft stage; SQA must
+        # hold to the copyedit-stage standard (S8_final_draft_min_words).
+        floor = floors.get("S8_final_draft_min_words", floors.get("S4_draft1_min_words", floor))
 
         # Find best available draft
         text = None
@@ -158,12 +161,22 @@ def _check_image_asset_clearance(
     for item in chapter_items:
         source_mode = item.get("source_mode", "")
         ingestion_source = item.get("ingestion_source", "")
-        status = item.get("ingestion_status", "pending")
+        # Normalize field: manifest uses "status"; gate contract uses "ingestion_status".
+        # Read both; ingestion_status takes precedence if present.
+        status = item.get("ingestion_status") or item.get("status", "pending")
         rights = item.get("rights_status", "")
 
         # engine-rendered visuals (eng) are handled in S7, skip
         if ingestion_source == "eng" or source_mode not in {
             "external_image", "ai_generated_image", "video_embed", "technical_asset"
+        }:
+            continue
+
+        # Offline-deferred assets (e.g. AI images for post-publication round) are not
+        # blocking at SQA: they are intentionally excluded from the online pipeline.
+        # A placeholder has been rendered; rights will be confirmed at offline collection.
+        if item.get("offline_acquisition_required") and status in {
+            "pending", "awaiting_offline_collection", "placeholder_rendered"
         }:
             continue
 

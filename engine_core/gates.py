@@ -400,6 +400,16 @@ def _run_check(
         payload = _read_artifact(contract["outputs"][1])
         passed = isinstance(payload, str) and "Unsupported claims remaining: 0" in payload
         detail = contract["outputs"][1]
+    elif check_name == "unsupported_claims_conditional":
+        import os
+        web_search_enabled = os.environ.get("ENABLE_WEB_SEARCH", "1").strip().lower() not in {"0", "false", "no"}
+        if not web_search_enabled:
+            passed = True
+            detail = {"skipped": True, "reason": "ENABLE_WEB_SEARCH=0: citation verification deferred to online pipeline run"}
+        else:
+            payload = _read_artifact(contract["outputs"][1])
+            passed = isinstance(payload, str) and "Unsupported claims remaining: 0" in payload
+            detail = contract["outputs"][1]
     elif check_name == "visual_plan_exists":
         payload = _read_artifact(contract["outputs"][1])
         passed = isinstance(payload, dict) and bool(payload.get("anchors"))
@@ -584,6 +594,20 @@ def _run_check(
         payload = _read_artifact(contract["outputs"][1])
         passed = isinstance(payload, str) and "## Verdict" in payload and "## Structure Integrity" in payload
         detail = contract["outputs"][1]
+    elif check_name == "word_floor_met_at_s8":
+        payload = _read_artifact(contract["outputs"][0])
+        target_payload = _read_artifact(str(book_root / "_master" / "WORD_TARGETS.json"))
+        floor = 180
+        if isinstance(target_payload, dict) and chapter_id:
+            for chapter in target_payload.get("chapters", []):
+                if chapter["chapter_id"] == chapter_id:
+                    floors_cfg = chapter.get("stage_progress_floors", {})
+                    floor = floors_cfg.get("S8_final_draft_min_words",
+                                          floors_cfg.get("S4_draft1_min_words", floor))
+                    break
+        measured = count_words(payload) if isinstance(payload, str) else 0
+        passed = isinstance(payload, str) and measured >= floor
+        detail = {"measured_words": measured, "required_floor_words": floor, "floor_source": "S8_final_draft_min_words"}
     elif check_name == "draft6_exists":
         payload = _read_artifact(contract["outputs"][0])
         start_count = payload.count("<!-- ANCHOR_START") if isinstance(payload, str) else 0

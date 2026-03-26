@@ -6,6 +6,48 @@ use tauri::Manager;
 
 struct ServerProcess(Mutex<Option<Child>>);
 
+/// Resolve the bundled sidecar binary path.
+///
+/// Tauri places `externalBin` entries (with triple suffix stripped) next to
+/// the main executable when installed. We look for:
+///   <exe_dir>/book_engine_server.exe    (Windows, installed)
+///   <exe_dir>/book_engine_server         (macOS/Linux, installed)
+///   <project_root>/frontend/src-tauri/binaries/book_engine_server[-triple].exe  (dev)
+fn find_sidecar(app: &tauri::App) -> Option<PathBuf> {
+    // 1. Installed: same directory as the main executable
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let candidates = [
+                dir.join("book_engine_server.exe"),
+                dir.join("book_engine_server"),
+            ];
+            for c in &candidates {
+                if c.exists() {
+                    return Some(c.clone());
+                }
+            }
+        }
+    }
+
+    // 2. Development build: project_root/frontend/src-tauri/binaries/
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(root) = exe.ancestors().nth(5) {
+            let binaries_dir = root.join("frontend").join("src-tauri").join("binaries");
+            if let Ok(entries) = fs::read_dir(&binaries_dir) {
+                for entry in entries.flatten() {
+                    let name = entry.file_name();
+                    let name_str = name.to_string_lossy();
+                    if name_str.starts_with("book_engine_server") {
+                        return Some(entry.path());
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
 /// Find a working Python executable on PATH.
 fn find_python() -> Option<String> {
     for candidate in &["python", "python3", "py"] {
@@ -53,43 +95,68 @@ fn resolve_project_root() -> Option<PathBuf> {
     None
 }
 
+/// Spawn the server process, preferring the bundled sidecar over system Python.
+///
+/// Priority:
+///   1. Bundled PyInstaller sidecar (book_engine_server.exe) — no Python required
+///   2. System Python + core_engine_cli.py               — dev / source installs
+fn spawn_server(app: &tauri::App) -> Option<Child> {
+    // --- Strategy 1: bundled sidecar ---
+    if let Some(sidecar) = find_sidecar(app) {
+        match Command::new(&sidecar)
+            .args(["--host", "127.0.0.1", "--port", "8000"])
+            .spawn()
+        {
+            Ok(child) => {
+                println!("[BookEngine] Server started via sidecar: {}", sidecar.display());
+                return Some(child);
+            }
+            Err(e) => {
+                eprintln!("[BookEngine] Sidecar found but failed to start: {e}");
+                // Fall through to Python fallback
+            }
+        }
+    }
+
+    // --- Strategy 2: system Python ---
+    let python = find_python();
+    let project_root = resolve_project_root();
+    match (python, project_root) {
+        (Some(py), Some(root)) => {
+            let script = root.join("tools").join("core_engine_cli.py");
+            match Command::new(&py)
+                .args([script.to_str().unwrap_or(""), "run-server"])
+                .current_dir(&root)
+                .spawn()
+            {
+                Ok(child) => {
+                    println!("[BookEngine] Server started via system Python ({py})");
+                    Some(child)
+                }
+                Err(e) => {
+                    eprintln!("[BookEngine] Failed to start server via Python: {e}");
+                    None
+                }
+            }
+        }
+        (None, _) => {
+            eprintln!("[BookEngine] No sidecar and Python not found — server not started");
+            None
+        }
+        (_, None) => {
+            eprintln!("[BookEngine] No sidecar and project root not found — server not started");
+            None
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let python = find_python();
-            let project_root = resolve_project_root();
-
-            let child: Option<Child> = match (python, project_root) {
-                (Some(py), Some(root)) => {
-                    let script = root.join("tools").join("core_engine_cli.py");
-                    match Command::new(&py)
-                        .args([script.to_str().unwrap_or(""), "run-server"])
-                        .current_dir(&root)
-                        .spawn()
-                    {
-                        Ok(c) => {
-                            println!("[BookEngine] Server started (python={py})");
-                            Some(c)
-                        }
-                        Err(e) => {
-                            eprintln!("[BookEngine] Failed to start server: {e}");
-                            None
-                        }
-                    }
-                }
-                (None, _) => {
-                    eprintln!("[BookEngine] Python not found — server not started");
-                    None
-                }
-                (_, None) => {
-                    eprintln!("[BookEngine] Project root not found — server not started");
-                    None
-                }
-            };
-
+            let child = spawn_server(app);
             app.manage(ServerProcess(Mutex::new(child)));
             Ok(())
         })

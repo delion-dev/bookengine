@@ -18,6 +18,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python server dependencies
+        run: pip install pyinstaller uvicorn[standard] fastapi pydantic
+
+      - name: Build Python sidecar (PyInstaller)
+        run: |
+          pyinstaller tools/bookengine_server.spec --distpath frontend/src-tauri/binaries --clean
+          # Rename to strip the platform triple if needed (Tauri strips it at runtime)
+          ls frontend/src-tauri/binaries/
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:

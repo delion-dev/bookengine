@@ -12,6 +12,9 @@ on:
         default: "v0.1.0"
 
 jobs:
+  # ──────────────────────────────────────────────
+  # Windows build (NSIS + MSI)
+  # ──────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
     steps:
@@ -30,7 +33,6 @@ jobs:
       - name: Build Python sidecar (PyInstaller)
         run: |
           pyinstaller tools/bookengine_server.spec --distpath frontend/src-tauri/binaries --clean
-          # Rename to strip the platform triple if needed (Tauri strips it at runtime)
           ls frontend/src-tauri/binaries/
 
       - name: Setup Node.js
@@ -59,53 +61,211 @@ jobs:
           npm install lightningcss-win32-x64-msvc --save-optional || true
           npm install @tailwindcss/oxide-win32-x64-msvc --save-optional || true
 
-      - name: Build Tauri app
+      - name: Build Tauri app (Windows)
         working-directory: frontend
         env:
           BOOKENGINE_LICENSE_SECRET: ${{ secrets.BOOKENGINE_LICENSE_SECRET }}
         run: npm run tauri build -- --bundles nsis,msi
 
-      - name: Upload NSIS installer (artifact)
+      - name: Upload NSIS installer
         uses: actions/upload-artifact@v4
         with:
-          name: BookEngine-${{ github.ref_name }}-setup
+          name: BookEngine-${{ github.ref_name }}-windows-setup
           path: frontend/src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: warn
 
-      - name: Upload MSI installer (artifact)
+      - name: Upload MSI installer
         uses: actions/upload-artifact@v4
         with:
-          name: BookEngine-${{ github.ref_name }}-msi
+          name: BookEngine-${{ github.ref_name }}-windows-msi
           path: frontend/src-tauri/target/release/bundle/msi/*.msi
           if-no-files-found: warn
 
+  # ──────────────────────────────────────────────
+  # macOS build (DMG + .app)
+  # ──────────────────────────────────────────────
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python server dependencies
+        run: pip install pyinstaller uvicorn[standard] fastapi pydantic
+
+      - name: Build Python sidecar (PyInstaller)
+        run: |
+          pyinstaller tools/bookengine_server.spec --distpath frontend/src-tauri/binaries --clean
+          ls frontend/src-tauri/binaries/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "frontend/src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Tauri app (macOS)
+        working-directory: frontend
+        env:
+          BOOKENGINE_LICENSE_SECRET: ${{ secrets.BOOKENGINE_LICENSE_SECRET }}
+        run: npm run tauri build -- --bundles dmg,app
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: BookEngine-${{ github.ref_name }}-macos-dmg
+          path: frontend/src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+
+  # ──────────────────────────────────────────────
+  # Linux build (DEB + AppImage)
+  # ──────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies (Tauri / WebKit2GTK)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python server dependencies
+        run: pip install pyinstaller uvicorn[standard] fastapi pydantic
+
+      - name: Build Python sidecar (PyInstaller)
+        run: |
+          pyinstaller tools/bookengine_server.spec --distpath frontend/src-tauri/binaries --clean
+          ls frontend/src-tauri/binaries/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "frontend/src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Tauri app (Linux)
+        working-directory: frontend
+        env:
+          BOOKENGINE_LICENSE_SECRET: ${{ secrets.BOOKENGINE_LICENSE_SECRET }}
+        run: npm run tauri build -- --bundles deb,appimage
+
+      - name: Upload DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: BookEngine-${{ github.ref_name }}-linux-deb
+          path: frontend/src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: warn
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: BookEngine-${{ github.ref_name }}-linux-appimage
+          path: frontend/src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: warn
+
+  # ──────────────────────────────────────────────
+  # GitHub Release (모든 플랫폼 빌드 완료 후)
+  # ──────────────────────────────────────────────
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find release-artifacts -type f | sort
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           name: BookEngine ${{ github.ref_name }}
           draft: true
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
           generate_release_notes: true
-          files: |
-            frontend/src-tauri/target/release/bundle/nsis/*.exe
-            frontend/src-tauri/target/release/bundle/msi/*.msi
+          files: release-artifacts/**/*
           body: |
             ## BookEngine ${{ github.ref_name }}
 
             ### 설치 방법
-            1. 아래 `*-setup.exe` 파일 다운로드
-            2. 실행 후 설치 진행
-            3. 앱 실행 → 라이선스 키 입력 (무료: `BKENG-TRIAL-00000-00000-00000`)
-            4. Gemini 또는 OpenAI API 키 입력
+
+            **Windows**
+            1. `*-setup.exe` 다운로드 후 실행
+            2. 앱 실행 → 라이선스 키 입력 (무료: `BKENG-TRIAL-00000-00000-00000`)
+            3. Gemini 또는 OpenAI API 키 입력
+
+            **macOS**
+            1. `*.dmg` 다운로드 후 Applications에 드래그
+            2. 첫 실행 시 Gatekeeper 경고 → 시스템 환경설정 → 보안 및 개인 정보 보호에서 허용
+            3. 라이선스 키 및 API 키 입력
+
+            **Linux**
+            1. `*.AppImage` 다운로드 → `chmod +x` 후 실행, 또는
+            2. `*.deb` → `sudo dpkg -i bookengine_*.deb`
 
             ### 다운로드
-            | 파일 | 설명 |
-            |------|------|
-            | `*-setup.exe` | NSIS 설치 마법사 (권장) |
-            | `*.msi` | MSI 패키지 |
+            | 파일 | 플랫폼 | 설명 |
+            |------|--------|------|
+            | `*-setup.exe` | Windows | NSIS 설치 마법사 (권장) |
+            | `*.msi` | Windows | MSI 패키지 |
+            | `*.dmg` | macOS | 디스크 이미지 |
+            | `*.AppImage` | Linux | 포터블 앱 (권장) |
+            | `*.deb` | Linux | Debian/Ubuntu 패키지 |
 
             ### 시스템 요구사항
-            - Windows 10 / 11 (64-bit)
-            - Python 3.11+ (서버 실행용)
-            - Google Gemini API 키 또는 OpenAI API 키
+            | 플랫폼 | 요구사항 |
+            |--------|---------|
+            | Windows | Windows 10 / 11 (64-bit) |
+            | macOS | macOS 10.15 Catalina 이상 |
+            | Linux | Ubuntu 20.04 / Debian 11 이상 |
+
+            > **공통**: Google Gemini API 키 또는 OpenAI API 키 필요

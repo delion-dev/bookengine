@@ -55,6 +55,7 @@ hidden_imports = [
     "engine_api.routers.settings",
     "engine_api.routers.stage",
     "engine_api.routers.work_order",
+    "engine_api.routers.batch",
     # engine_core — all modules
     "engine_core",
     "engine_core.common",

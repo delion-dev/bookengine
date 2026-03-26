@@ -298,6 +298,9 @@ _EPUB_STYLE_SUBJECTS: dict[str, list[str]] = {
     "GBOOK-TUTO": ["Computers / General", "Self-Help / General"],
     "GBOOK-MINI": ["Computers / General"],
     "GBOOK-CUSTOM": [],
+    "GBOOK-TRAVEL": ["Travel / Korea", "Essays / Travel", "Cultural Heritage"],
+    "GBOOK-KIDS": ["Juvenile Fiction / General", "Children's Literature / Korean"],
+    "GBOOK-LANG": ["Language Arts & Disciplines / Language Learning", "Foreign Language Study / Korean"],
 }
 
 

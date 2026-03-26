@@ -34,6 +34,10 @@ API namespaces:
   GET  /engine/mesh/bridge             — bridge context for chapter
   POST /engine/mesh/query              — keyword search
   POST /engine/mesh/node/update        — update chapter node
+  POST /engine/batch/run               — start batch stage job
+  GET  /engine/batch                   — list active batches (up to 20)
+  GET  /engine/batch/{batch_id}        — batch status
+  DELETE /engine/batch/{batch_id}      — remove completed/failed batch
 """
 
 import sys
@@ -47,7 +51,7 @@ if str(_REPO_ROOT) not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from engine_api.routers import constitution, gate, healing, license, mesh, publish, qa, registry, settings, stage, work_order
+from engine_api.routers import batch, constitution, gate, healing, license, mesh, publish, qa, registry, settings, stage, work_order
 
 app = FastAPI(
     title="Core Engine API",
@@ -73,6 +77,7 @@ app.add_middleware(
 
 # Mount routers
 app.include_router(registry.router)
+app.include_router(batch.router)
 app.include_router(stage.router)
 app.include_router(gate.router)
 app.include_router(work_order.router)

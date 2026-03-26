@@ -684,15 +684,29 @@ def _grounded_brief_for_writer(
         return None
 
 
+def _backfill_section_budget_config() -> dict:
+    """Load S4 backfill_section_budget from stage_execution_policies.json."""
+    payload = read_json(PLATFORM_CORE_ROOT / "stage_execution_policies.json", default={}) or {}
+    return payload.get("stages", {}).get("S4", {}).get("backfill_section_budget", {})
+
+
 def _section_word_budget(chapter_target: dict[str, Any]) -> dict[str, int]:
+    """Compute per-section word budgets for the artifact-backfill path.
+
+    Uses backfill_section_budget config (lower floor than full-generation budget)
+    because this function reconstructs metadata from existing prose, not generating new content.
+    """
+    cfg = _backfill_section_budget_config()
+    desired_total_ratio = float(cfg.get("desired_total_ratio", 0.3))
+    floor_offset = int(cfg.get("desired_total_floor_offset", 180))
     desired_total = max(
-        chapter_target["stage_progress_floors"]["S4_draft1_min_words"] + 180,
-        int(chapter_target["target_words"] * 0.3),
+        chapter_target["stage_progress_floors"]["S4_draft1_min_words"] + floor_offset,
+        int(chapter_target["target_words"] * desired_total_ratio),
     )
-    hook = max(90, int(desired_total * 0.16))
-    context = max(120, int(desired_total * 0.22))
-    insight = max(180, int(desired_total * 0.44))
-    takeaway = max(90, desired_total - hook - context - insight)
+    hook = max(int(cfg.get("hook_min_words", 90)), int(desired_total * float(cfg.get("hook_ratio", 0.16))))
+    context = max(int(cfg.get("context_min_words", 120)), int(desired_total * float(cfg.get("context_ratio", 0.22))))
+    insight = max(int(cfg.get("insight_min_words", 180)), int(desired_total * float(cfg.get("insight_ratio", 0.44))))
+    takeaway = max(int(cfg.get("takeaway_min_words", 90)), desired_total - hook - context - insight)
     return {
         "desired_total": desired_total,
         "hook": hook,

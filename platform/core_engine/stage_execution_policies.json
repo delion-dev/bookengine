@@ -127,7 +127,19 @@
         "context_min_words": 360,
         "insight_min_words": 820,
         "takeaway_min_words": 260,
+        "desired_total_ratio": 0.9,
         "live_success_ratio_floor": 0.25
+      },
+      "backfill_section_budget": {
+        "hook_ratio": 0.16,
+        "context_ratio": 0.22,
+        "insight_ratio": 0.44,
+        "hook_min_words": 90,
+        "context_min_words": 120,
+        "insight_min_words": 180,
+        "takeaway_min_words": 90,
+        "desired_total_ratio": 0.3,
+        "desired_total_floor_offset": 180
       },
       "global_characteristics": [
         "Preserve chapter structure and anchor obligations.",
